@@ -712,7 +712,7 @@ def plot_timeline(schedule, process_type, confirmation_period):
     
     # 设置坐标轴
     ax.set_yticks(list(y_positions.values()))
-    ax.set_yticklabels(list(y_positions.keys()), fontsize=22, fontweight='bold')  # 统一部门标签大小
+    ax.set_yticklabels(list(y_positions.keys()), fontsize=22, fontweight='bold', fontproperties=prop)  # 统一部门标签大小
     ax.set_xticks([])
     ax.set_xticklabels([])
     ax.set_xlim(-0.02, 1.02)
@@ -921,7 +921,7 @@ def generate_department_wise_plots(styles):
             else:
                 y_labels.append(f"款号: {style}")
         
-        ax.set_yticklabels(y_labels, fontsize=14, fontweight='bold')
+        ax.set_yticklabels(y_labels, fontsize=14, fontweight='bold', fontproperties=prop)
         ax.set_xticks([])
         ax.set_xlim(-0.02, 1.02)
         ax.set_ylim(min(y_positions.values()) - 0.7, max(y_positions.values()) + 0.7)
