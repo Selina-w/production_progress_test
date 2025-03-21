@@ -729,7 +729,7 @@ def plot_timeline(schedule, process_type, confirmation_period):
             group_text = f"生产组: {st.session_state['production_group']}"
             style_number_wrapped.append(group_text)
         title_text += "\n" + "\n".join(style_number_wrapped)
-    ax.set_title(title_text, fontsize=30, fontweight='bold', y=1.02 + 0.02 * (len(style_number_wrapped) if 'style_number_wrapped' in locals() else 0))
+    ax.set_title(title_text, fontsize=30, fontweight='bold', y=1.02 + 0.02 * (len(style_number_wrapped) if 'style_number_wrapped' in locals() else 0), fontproperties=prop)
     ax.set_frame_on(False)
     
     # 调整图形布局以适应文本框
@@ -930,7 +930,7 @@ def generate_department_wise_plots(styles):
         ax.set_title(department,
                     fontsize=24,
                     fontweight='bold',
-                    y=1.02)
+                    y=1.02, fontproperties=prop)
         ax.set_frame_on(False)
         
         # Save figure
@@ -968,7 +968,7 @@ def generate_department_wise_plots(styles):
             ax.set_title(f"{department} - 生产组: {group}",
                         fontsize=24,
                         fontweight='bold',
-                        y=1.02)
+                        y=1.02, fontproperties=prop)
                         
             # Save with production group in filename
             group_fig_path = os.path.join(temp_dir, f"{department}_生产组_{group}.png")
