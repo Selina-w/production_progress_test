@@ -53,7 +53,7 @@ plt.rcParams['text.hinting_factor'] = 8  # Sharper text
 plt.rcParams['text.usetex'] = False  # Disable LaTeX by default
 plt.style.use('default')  # Reset to default style for clean rendering
 
-
+fm._load_fontmanager()
 # 检查字体是否可用
 font_names = [f.name for f in fm.fontManager.ttflist]
 chinese_fonts = [f for f in font_names if any(name in f for name in ['PingFang', 'Microsoft', 'SimHei', 'Arial Unicode'])]
