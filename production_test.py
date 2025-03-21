@@ -36,8 +36,11 @@ def load_user_data(user_id):
             return data
     return {"all_styles": []}
 fm._load_fontmanager()
+# Path relative to your script
+font_path = os.path.join(os.path.dirname(__file__), "static", "simhei.ttf")
+prop = fm.FontProperties(fname=font_path)
 plt.rcParams['font.sans-serif'] = ['PingFang HK', 'Songti SC', 'SimHei', 'Arial Unicode MS']
-#plt.rcParams['font.family'] = 'sans-serif'
+plt.rcParams['font.family'] = 'sans-serif'
 plt.rcParams['axes.unicode_minus'] = False  # Fix minus signs
 plt.rcParams['figure.dpi'] = 300
 plt.rcParams['savefig.dpi'] = 300
@@ -654,7 +657,8 @@ def plot_timeline(schedule, process_type, confirmation_period):
                                fontweight='bold',
                                bbox=text_box,
                                zorder=5,  # Ensure text is above other elements
-                               snap=True)  # Snap to pixel grid
+                               snap=True,
+                               fontproperties=prop)  # Snap to pixel grid
         
         # 绘制实线连接
         x_positions = sorted(list(time_groups.keys()))
@@ -700,7 +704,7 @@ def plot_timeline(schedule, process_type, confirmation_period):
     #     step_text = f"{step}\n{date.strftime('%Y/%m/%d')}"
     #     ax.text(x_pos, y_center - 0.3, step_text, ha='center', va='top',
     #            fontsize=16, color='black', fontweight='bold',
-    #            bbox=text_box)
+    #            bbox=text_box, fontproperties=prop)
     
     ## 绘制连接线
     #if len(x_positions) > 1:
@@ -894,7 +898,7 @@ def generate_department_wise_plots(styles):
                         fontsize=12,
                         fontweight='bold',
                         bbox=text_box,
-                        zorder=5
+                        zorder=5, fontproperties=prop
                     )
             
             # Connect points with lines
