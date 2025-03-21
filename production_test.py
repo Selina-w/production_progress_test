@@ -36,7 +36,7 @@ def load_user_data(user_id):
             return data
     return {"all_styles": []}
 fm._load_fontmanager()
-plt.rcParams['font.sans-serif'] = ['PingFang HK', 'Songti SC', 'Arial Unicode MS']
+plt.rcParams['font.sans-serif'] = ['PingFang HK', 'Songti SC', 'SimHei', 'Arial Unicode MS']
 #plt.rcParams['font.family'] = 'sans-serif'
 plt.rcParams['axes.unicode_minus'] = False  # Fix minus signs
 plt.rcParams['figure.dpi'] = 300
