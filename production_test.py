@@ -38,7 +38,7 @@ def load_user_data(user_id):
 fm._load_fontmanager()
 # Path relative to your script
 font_path = os.path.join(os.path.dirname(__file__), "static", "simhei.ttf")
-prop = fm.FontProperties(fname=font_path)
+prop = fm.FontProperties(fname=font_path, size=22, weight='bold')
 plt.rcParams['font.sans-serif'] = ['PingFang HK', 'Songti SC', 'SimHei', 'Arial Unicode MS']
 plt.rcParams['font.family'] = 'sans-serif'
 plt.rcParams['axes.unicode_minus'] = False  # Fix minus signs
