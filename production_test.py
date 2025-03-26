@@ -137,7 +137,54 @@ def calculate_schedule(sewing_start_date, process_type, confirmation_period, ord
     for dept, steps in get_department_steps(process_type).items():
         schedule[dept] = {}
     
-    X = sewing_start_date  # 订单接收日期或排产开始日期
+    Y = sewing_start_date  # 订单缝纫开始日期
+    if confirmation_period == 7:
+        if process_type == "满花局花绣花":
+            X = Y - timedelta(days=53)
+        elif process_type == "满花局花":
+            X = Y - timedelta(days=47)
+        elif process_type == "满花绣花":
+            X = Y - timedelta(days=49)
+        elif process_type == "局花绣花":
+            X = Y - timedelta(days=48)
+        elif process_type == "满花":
+            X = Y - timedelta(days=42)
+        elif process_type == "局花":
+            X = Y - timedelta(days=41)
+        else:
+            X = Y - timedelta(days=43)
+
+    elif confirmation_period == 14:
+        if process_type == "满花局花绣花":
+            X = Y - timedelta(days=61)
+        elif process_type == "满花局花":
+            X = Y - timedelta(days=54)
+        elif process_type == "满花绣花":
+            X = Y - timedelta(days=56)
+        elif process_type == "局花绣花":
+            X = Y - timedelta(days=55)
+        elif process_type == "满花":
+            X = Y - timedelta(days=49)
+        elif process_type == "局花":
+            X = Y - timedelta(days=48)
+        else:
+            X = Y - timedelta(days=50)
+
+    elif confirmation_period == 30:
+        if process_type == "满花局花绣花":
+            X = Y - timedelta(days=77)
+        elif process_type == "满花局花":
+            X = Y - timedelta(days=70)
+        elif process_type == "满花绣花":
+            X = Y - timedelta(days=72)
+        elif process_type == "局花绣花":
+            X = Y - timedelta(days=68)
+        elif process_type == "满花":
+            X = Y - timedelta(days=65)
+        elif process_type == "局花":
+            X = Y - timedelta(days=61)
+        else:
+            X = Y - timedelta(days=63)
     # 1. 计算产前确认阶段
     schedule["产前确认"]["代用面料裁剪"] = {"时间点": X + timedelta(days=20)}
     if "满花样品" in schedule["产前确认"]:
@@ -388,7 +435,7 @@ def calculate_schedule(sewing_start_date, process_type, confirmation_period, ord
     schedule["辅料"]["物理检测"] = {"时间点": schedule["辅料"]["辅料"]["时间点"] + timedelta(days=1)}
 
     # 9. 计算缝纫工艺
-    schedule["缝纫"]["缝纫开始"] = {"时间点": schedule["缝纫"]["缝纫工艺"]["时间点"] + timedelta(days=2)}
+    schedule["缝纫"]["缝纫开始"] = sewing_start_date #{"时间点": schedule["缝纫"]["缝纫工艺"]["时间点"] + timedelta(days=2)}
     
     # 计算缝纫结束时间，根据小数部分决定是当天中午结束还是下一天结束
     sewing_days_float = order_quantity * 1.05 / daily_production
@@ -1156,14 +1203,14 @@ else:
     if uploaded_file is not None:
         try:
             df = pd.read_excel(uploaded_file)
-            required_columns = ['款号', '订单接收日期或排产开始日期', '工序', '确认周转周期', '订单数量', '日产量', '生产组']
+            required_columns = ['款号', '缝纫开始日期', '工序', '确认周转周期', '订单数量', '日产量', '生产组']
             
             # Check if all required columns exist
             if not all(col in df.columns for col in required_columns):
                 st.error(f"Excel文件必须包含以下列：{', '.join(required_columns)}")
             else:
                 # Convert dates to datetime if they aren't already
-                df['订单接收日期或排产开始日期'] = pd.to_datetime(df['订单接收日期或排产开始日期']).dt.date
+                df['缝纫开始日期'] = pd.to_datetime(df['缝纫开始日期']).dt.date
                 
                 # Validate process types
                 valid_processes = ["满花局花绣花", "满花局花", "满花绣花", "局花绣花", "满花", "局花", "绣花"]
@@ -1176,7 +1223,7 @@ else:
                     for _, row in df.iterrows():
                         new_style = {
                             "style_number": str(row['款号']),
-                            "sewing_start_date": row['订单接收日期或排产开始日期'],
+                            "sewing_start_date": row['缝纫开始日期'],
                             "process_type": row['工序'],
                             "cycle": int(row['确认周转周期']),
                             "order_quantity": int(row['订单数量']),
@@ -1202,7 +1249,7 @@ else:
     with st.form("style_input_form"):
         # 批量输入款号，每行一个
         style_numbers = st.text_area("请输入款号(每行一个):", "")
-        sewing_start_date = st.date_input("请选择订单接收日期或排产开始日期:", min_value=datetime.today().date())
+        sewing_start_date = st.date_input("请选择缝纫开始日期:", min_value=datetime.today().date())
         process_options = ["满花局花绣花", "满花局花", "满花绣花", "局花绣花", "满花", "局花", "绣花"]
         selected_process = st.selectbox("请选择工序:", process_options)
         # 添加新字段
@@ -1243,7 +1290,7 @@ else:
             col1, col2 = st.columns([4, 1])
             with col1:
                 st.write(f"{idx + 1}. 款号: {style['style_number']}, 工序: {style['process_type']}, " 
-                    f"订单接收日期: {style['sewing_start_date']}, 周期: {style['cycle']}, "
+                    f"缝纫开始日期: {style['sewing_start_date']}, 周期: {style['cycle']}, "
                     f"订单数量: {style.get('order_quantity', '-')}, 日产量: {style.get('daily_production', '-')}, "
                     f"生产组号: {style.get('production_group', '-')}")
             with col2:
