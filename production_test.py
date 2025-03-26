@@ -977,14 +977,21 @@ def generate_department_wise_plots(styles):
         )
         for dept, steps in schedule.items():
             for step, data in steps.items():
-                all_schedules.append({
+                # 创建一个新字典来存储步骤数据
+                step_data = {
                     "style_number": style["style_number"],
                     "department": dept,
                     "step": step,
                     "date": data["时间点"],
                     "process_type": style["process_type"],
                     "production_group": style.get("production_group", "")
-                })
+                }
+                
+                # 如果有备注信息，添加到步骤数据中
+                if "备注" in data:
+                    step_data["remarks"] = data["备注"]
+                
+                all_schedules.append(step_data)
     
     # Convert to DataFrame for sorting
     df = pd.DataFrame(all_schedules)
@@ -1100,18 +1107,22 @@ def generate_department_wise_plots(styles):
                     # 为部门时间线图的单独绘制中添加备注显示
                     # 查找原始数据中的备注信息 - 使用缓存的schedule数据
                     if department == "缝纫" and (row["step"] == "缝纫结束" or row["step"] == "缝纫开始"):
-                        for style_info in styles:
-                            if style_info["style_number"] == row["style_number"]:
-                                if row["step"] == "缝纫开始":
-                                    # 缝纫开始步骤直接使用start_time_period作为备注
-                                    start_time_period = style_info.get("start_time_period", "上午")
-                                    step_text = f"{row['step']}\n{row['date'].strftime('%Y/%m/%d')}\n{start_time_period}"
-                                elif row["step"] == "缝纫结束":
-                                    # 从缓存的schedule中获取缝纫结束备注
-                                    if "schedule" in style_info and "缝纫" in style_info["schedule"] and "缝纫结束" in style_info["schedule"]["缝纫"] and "备注" in style_info["schedule"]["缝纫"]["缝纫结束"]:
-                                        end_remark = style_info["schedule"]["缝纫"]["缝纫结束"]["备注"]
-                                        step_text = f"{row['step']}\n{row['date'].strftime('%Y/%m/%d')}\n{end_remark}"
-                                break  # 找到对应的style后就退出循环
+                         # DataFrame行访问需要用不同的方式
+                        if "remarks" in row and pd.notna(row["remarks"]) and row["remarks"]:
+                            # 如果DataFrame行中有remarks数据
+                            step_text = f"{row['step']}\n{row['date'].strftime('%Y/%m/%d')}\n{row['remarks']}"
+                        else:
+                            # 作为备份，从原始style数据中查找
+                            for style_info in styles:
+                                if style_info["style_number"] == row["style_number"]:
+                                    if row["step"] == "缝纫开始":
+                                        start_time_period = style_info.get("start_time_period", "上午")
+                                        step_text = f"{row['step']}\n{row['date'].strftime('%Y/%m/%d')}\n{start_time_period}"
+                                    elif row["step"] == "缝纫结束" and "schedule" in style_info:
+                                        if "缝纫" in style_info["schedule"] and "缝纫结束" in style_info["schedule"]["缝纫"] and "备注" in style_info["schedule"]["缝纫"]["缝纫结束"]:
+                                            end_remark = style_info["schedule"]["缝纫"]["缝纫结束"]["备注"]
+                                            step_text = f"{row['step']}\n{row['date'].strftime('%Y/%m/%d')}\n{end_remark}"
+                                    break
                     
                     ax.text(
                         text_x, y + y_offset,
@@ -1245,18 +1256,22 @@ def generate_department_wise_plots(styles):
                     # 为部门时间线图的单独绘制中添加备注显示
                     # 查找原始数据中的备注信息 - 使用缓存的schedule数据
                     if department == "缝纫" and (row["step"] == "缝纫结束" or row["step"] == "缝纫开始"):
-                        for style_info in styles:
-                            if style_info["style_number"] == row["style_number"]:
-                                if row["step"] == "缝纫开始":
-                                    # 缝纫开始步骤直接使用start_time_period作为备注
-                                    start_time_period = style_info.get("start_time_period", "上午")
-                                    step_text = f"{row['step']}\n{row['date'].strftime('%Y/%m/%d')}\n{start_time_period}"
-                                elif row["step"] == "缝纫结束":
-                                    # 从缓存的schedule中获取缝纫结束备注
-                                    if "schedule" in style_info and "缝纫" in style_info["schedule"] and "缝纫结束" in style_info["schedule"]["缝纫"] and "备注" in style_info["schedule"]["缝纫"]["缝纫结束"]:
-                                        end_remark = style_info["schedule"]["缝纫"]["缝纫结束"]["备注"]
-                                        step_text = f"{row['step']}\n{row['date'].strftime('%Y/%m/%d')}\n{end_remark}"
-                                break  # 找到对应的style后就退出循环
+                        # DataFrame行访问需要用不同的方式
+                        if "remarks" in row and pd.notna(row["remarks"]) and row["remarks"]:
+                            # 如果DataFrame行中有remarks数据
+                            step_text = f"{row['step']}\n{row['date'].strftime('%Y/%m/%d')}\n{row['remarks']}"
+                        else:
+                            # 作为备份，从原始style数据中查找
+                            for style_info in styles:
+                                if style_info["style_number"] == row["style_number"]:
+                                    if row["step"] == "缝纫开始":
+                                        start_time_period = style_info.get("start_time_period", "上午")
+                                        step_text = f"{row['step']}\n{row['date'].strftime('%Y/%m/%d')}\n{start_time_period}"
+                                    elif row["step"] == "缝纫结束" and "schedule" in style_info:
+                                        if "缝纫" in style_info["schedule"] and "缝纫结束" in style_info["schedule"]["缝纫"] and "备注" in style_info["schedule"]["缝纫"]["缝纫结束"]:
+                                            end_remark = style_info["schedule"]["缝纫"]["缝纫结束"]["备注"]
+                                            step_text = f"{row['step']}\n{row['date'].strftime('%Y/%m/%d')}\n{end_remark}"
+                                    break
                     ax.text(
                         text_x, y + y_offset,
                         step_text,
