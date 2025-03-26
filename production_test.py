@@ -510,6 +510,127 @@ def calculate_schedule(sewing_start_date, process_type, confirmation_period, ord
 
     return schedule
 
+# 重新安排生产组中款式的缝纫开始时间
+def rearrange_styles_by_production_group(styles):
+    """
+    重新安排同一生产组内款式的缝纫开始时间
+    确保同一生产顺序的款式共享相同的开始时间
+    确保下一个生产顺序的款式开始时间等于前一个生产顺序中最后一个款式的结束时间
+    """
+    # 将款式按生产组分组
+    grouped_styles = {}
+    for style in styles:
+        group = style.get("production_group", "")
+        if not group:  # 如果没有生产组，跳过
+            continue
+        
+        if group not in grouped_styles:
+            grouped_styles[group] = []
+        grouped_styles[group].append(style)
+    
+    # 对每个生产组内的款式进行处理
+    rearranged_styles = []
+    for group, group_styles in grouped_styles.items():
+        # 按照生产顺序进一步分组
+        order_grouped_styles = {}
+        for style in group_styles:
+            order = style.get("production_order", 9999)
+            if order not in order_grouped_styles:
+                order_grouped_styles[order] = []
+            order_grouped_styles[order].append(style)
+        
+        # 按生产顺序排序
+        sorted_orders = sorted(order_grouped_styles.keys())
+        
+        # 处理第一个生产顺序组 - 保持原始开始日期
+        first_order = sorted_orders[0]
+        first_order_styles = order_grouped_styles[first_order]
+        
+        # 获取第一个款式的缝纫开始日期和时段作为这个组的共同开始时间
+        if first_order_styles:
+            # 可以按照日期排序，以确保使用最早的日期
+            first_order_styles.sort(key=lambda x: x["sewing_start_date"])
+            first_style = first_order_styles[0]
+            start_date = first_style["sewing_start_date"]
+            start_time_period = first_style.get("start_time_period", "上午")
+            
+            # 将相同开始时间应用于该组中的所有款式
+            for style in first_order_styles:
+                style["sewing_start_date"] = start_date
+                style["start_time_period"] = start_time_period
+                rearranged_styles.append(style)
+            
+            # 计算该组最后结束的时间 - 需要检查每个款式的结束时间
+            latest_end_time = None
+            latest_end_remark = "下午结束"
+            
+            for style in first_order_styles:
+                sewing_start_time = datetime.combine(style["sewing_start_date"], datetime.min.time())
+                schedule = calculate_schedule(
+                    sewing_start_time, 
+                    style["process_type"], 
+                    style["cycle"], 
+                    style["order_quantity"], 
+                    style["daily_production"],
+                    style["start_time_period"]
+                )
+                
+                end_time = schedule["缝纫"]["缝纫结束"]["时间点"]
+                end_remark = schedule["缝纫"]["缝纫结束"].get("备注", "下午结束")
+                
+                if latest_end_time is None or end_time > latest_end_time:
+                    latest_end_time = end_time
+                    latest_end_remark = end_remark
+            
+            # 依次处理后续生产顺序组
+            for i in range(1, len(sorted_orders)):
+                current_order = sorted_orders[i]
+                current_order_styles = order_grouped_styles[current_order]
+                
+                # 前一个组的结束时间作为当前组的开始时间
+                start_date = latest_end_time.date()
+                
+                # 根据前一个结束时段确定当前组的开始时段
+                if "上午" in latest_end_remark:
+                    start_time_period = "上午"
+                else:
+                    start_time_period = "下午"
+                
+                # 将相同开始时间应用于该组中的所有款式
+                for style in current_order_styles:
+                    style["sewing_start_date"] = start_date
+                    style["start_time_period"] = start_time_period
+                    rearranged_styles.append(style)
+                
+                # 更新最晚结束时间以供下一个组使用
+                latest_end_time = None
+                latest_end_remark = "下午结束"
+                
+                for style in current_order_styles:
+                    sewing_start_time = datetime.combine(style["sewing_start_date"], datetime.min.time())
+                    schedule = calculate_schedule(
+                        sewing_start_time, 
+                        style["process_type"], 
+                        style["cycle"], 
+                        style["order_quantity"], 
+                        style["daily_production"],
+                        style["start_time_period"]
+                    )
+                    
+                    end_time = schedule["缝纫"]["缝纫结束"]["时间点"]
+                    end_remark = schedule["缝纫"]["缝纫结束"].get("备注", "下午结束")
+                    
+                    if latest_end_time is None or end_time > latest_end_time:
+                        latest_end_time = end_time
+                        latest_end_remark = end_remark
+    
+    # 添加没有生产组的款式
+    for style in styles:
+        if not style.get("production_group", ""):
+            rearranged_styles.append(style)
+    
+    return rearranged_styles
+    
 # 画时间线
 def plot_timeline(schedule, process_type, confirmation_period):
     # 根据工序类型定义部门顺序和颜色
@@ -845,7 +966,15 @@ def generate_department_wise_plots(styles):
     # Calculate schedules for all styles
     for style in styles:
         sewing_start_time = datetime.combine(style["sewing_start_date"], datetime.min.time())
-        schedule = calculate_schedule(sewing_start_time, style["process_type"], style["cycle"], style["order_quantity"], style["daily_production"])
+        start_time_period = style.get("start_time_period", "上午")  # 获取上午/下午信息
+        schedule = calculate_schedule(
+            sewing_start_time, 
+            style["process_type"], 
+            style["cycle"], 
+            style["order_quantity"], 
+            style["daily_production"],
+            start_time_period
+        )
         for dept, steps in schedule.items():
             for step, data in steps.items():
                 all_schedules.append({
@@ -1003,10 +1132,19 @@ def generate_department_wise_plots(styles):
         for style in y_positions.keys():
             style_rows = dept_data[dept_data["style_number"] == style]
             production_group = style_rows.iloc[0]["production_group"] if len(style_rows) > 0 and style_rows.iloc[0]["production_group"] else ""
-            if production_group:
-                y_labels.append(f"款号: {style} (生产组: {production_group})")
+            # 查找生产顺序
+            original_style = next((s for s in styles if s["style_number"] == style), None)
+            if original_style and "production_order" in original_style:
+                production_order = original_style["production_order"]
+                if production_group:
+                    y_labels.append(f"款号: {style} (生产组: {production_group}, 序号: {production_order})")
+                else:
+                    y_labels.append(f"款号: {style} (序号: {production_order})")
             else:
-                y_labels.append(f"款号: {style}")
+                if production_group:
+                    y_labels.append(f"款号: {style} (生产组: {production_group})")
+                else:
+                    y_labels.append(f"款号: {style}")
         
         ax.set_yticklabels(y_labels, fontsize=14, fontweight='bold', fontproperties=prop)
         ax.set_xticks([])
@@ -1245,6 +1383,14 @@ else:
         try:
             df = pd.read_excel(uploaded_file)
             required_columns = ['款号', '缝纫开始日期', '缝纫开始时间', '工序', '确认周转周期', '订单数量', '日产量', '生产组']
+            # 显示Excel可选列的说明
+            st.info("""
+            **Excel文件说明**:
+            * 必需列: 款号、缝纫开始日期、缝纫开始时间、工序、确认周转周期、订单数量、日产量、生产组
+            * 可选列: 生产顺序 (同一生产组内款式的排产顺序，相同顺序号的款式将在同一天开始生产)
+            * 缝纫开始时间列应填写"上午"或"下午"
+            * 工序列应为以下之一: 满花局花绣花、满花局花、满花绣花、局花绣花、满花、局花、绣花
+            """)
             
             # Check if all required columns exist
             if not all(col in df.columns for col in required_columns):
@@ -1259,11 +1405,19 @@ else:
                 if len(invalid_processes) > 0:
                     st.error(f"发现无效的工序类型：{', '.join(invalid_processes)}")
                 else:
+                    # 检查"生产顺序"列是否存在
+                    has_production_order = '生产顺序' in df.columns
+                    if has_production_order:
+                        st.success("检测到'生产顺序'列，将根据此列对同一生产组内的款式进行排序。")
+                        
                     # Add new styles from Excel
                     new_styles = []
                     for _, row in df.iterrows():
                         # 确保缝纫开始时间是上午或下午，默认为上午
                         start_time = row['缝纫开始时间'] if row['缝纫开始时间'] in ["上午", "下午"] else "上午"
+                        # 获取生产顺序，如果存在
+                        production_order = int(row['生产顺序']) if '生产顺序' in df.columns and pd.notna(row['生产顺序']) else 1
+                        
                         new_style = {
                             "style_number": str(row['款号']),
                             "sewing_start_date": row['缝纫开始日期'],
@@ -1272,7 +1426,8 @@ else:
                             "cycle": int(row['确认周转周期']),
                             "order_quantity": int(row['订单数量']),
                             "daily_production": int(row['日产量']),
-                            "production_group": str(row['生产组'])
+                            "production_group": str(row['生产组']),
+                            "production_order": production_order
                         }
                         new_styles.append(new_style)
                     
@@ -1306,6 +1461,7 @@ else:
         order_quantity = st.number_input("订单数量:", min_value=1, value=100)
         daily_production = st.number_input("日产量:", min_value=1, value=50)
         production_group = st.text_input("生产组号:", "")
+        production_order = st.number_input("生产顺序:", min_value=1, value=1, help="同一生产组内款式的生产顺序")
         cycle = st.selectbox("请选择确认周转周期:", [7, 14, 30])
         
         submitted = st.form_submit_button("添加款号")
@@ -1323,7 +1479,8 @@ else:
                     "cycle": cycle,
                     "order_quantity": order_quantity,
                     "daily_production": daily_production,
-                    "production_group": production_group
+                    "production_group": production_group,
+                    "production_order": production_order
                 }
                 st.session_state["all_styles"].append(new_style)
             # Auto-save after adding styles
@@ -1341,10 +1498,11 @@ else:
             col1, col2 = st.columns([4, 1])
             with col1:
                 time_period = style.get("start_time_period", "上午")  # 默认为上午
+                production_order = style.get("production_order", "-")
                 st.write(f"{idx + 1}. 款号: {style['style_number']}, 工序: {style['process_type']}, " 
                     f"缝纫开始日期: {style['sewing_start_date']} {time_period}, 周期: {style['cycle']}, "
                     f"订单数量: {style.get('order_quantity', '-')}, 日产量: {style.get('daily_production', '-')}, "
-                    f"生产组号: {style.get('production_group', '-')}")
+                    f"生产组号: {style.get('production_group', '-')}, 生产顺序: {production_order}")
             with col2:
                 if st.button("删除", key=f"delete_{idx}"):
                     st.session_state["all_styles"].pop(idx)
@@ -1363,16 +1521,177 @@ else:
             })
             st.rerun()
 
-    # 生成图表按钮
+    # 添加是否启用连续排产的选项
     if st.session_state["all_styles"]:
+        st.subheader("生成图表")
+
+        # 添加连续排产逻辑说明
+        with st.expander("📋 查看生产组连续排产逻辑说明"):
+            st.markdown("""
+            ### 生产组连续排产逻辑
+            
+            系统按以下规则处理同一生产组内的款式排产:
+            
+            1. **同一生产顺序的款式**:
+               - 共享相同的缝纫开始日期和时段（上午/下午）
+               - 生产顺序为1的款式使用原始设定的开始日期
+               - 各自按其工序、订单数量和日产量计算结束时间
+            
+            2. **连续排产规则**:
+               - 系统会找出当前生产顺序组中结束时间最晚的款式
+               - 该款式的缝纫结束时间（及上午/下午时段）将作为下一个生产顺序组的开始时间
+               - 依此类推，形成连续排产
+               
+            3. **实际应用**:
+               - 生产顺序为1的款式可以手动指定开始日期
+               - 生产顺序为2、3...的款式会自动根据前一组的结束时间进行排产
+               - 相同生产顺序的款式将在同一天同一时段开始，可能在不同时间结束
+            """)
+        
+        enable_sequential_production = st.checkbox("启用生产组连续排产功能", value=True, 
+                                            help="启用后，同一生产组内，下一个生产顺序(production_order)的款式将从前一个生产顺序中最晚完成的款式结束时间开始")
+        
+        # 添加预览按钮
+        if enable_sequential_production and st.button("预览生产组排产结果"):
+            # 重新安排同一生产组内款式的缝纫开始时间
+            preview_styles = rearrange_styles_by_production_group(st.session_state["all_styles"])
+            
+            # 按生产组分组显示排产结果
+            grouped_styles = {}
+            for style in preview_styles:
+                group = style.get("production_group", "无生产组")
+                if group not in grouped_styles:
+                    grouped_styles[group] = []
+                grouped_styles[group].append(style)
+            
+            # 显示每个生产组的排产结果
+            for group, styles in grouped_styles.items():
+                if group != "无生产组":
+                    st.write(f"### 生产组: {group}")
+                    
+                    # 按生产顺序进一步分组
+                    order_grouped_styles = {}
+                    for style in styles:
+                        order = style.get("production_order", 9999)
+                        if order not in order_grouped_styles:
+                            order_grouped_styles[order] = []
+                        order_grouped_styles[order].append(style)
+                    
+                    # 记录前一个顺序组的结束信息，用于显示连续关系
+                    prev_end_info = None
+                    
+                    # 按生产顺序排序
+                    for order in sorted(order_grouped_styles.keys()):
+                        order_styles = order_grouped_styles[order]
+                        
+                        # 如果不是第一个生产顺序，显示连续关系
+                        if prev_end_info:
+                            st.markdown(f"""
+                            <div style="text-align:center; padding: 10px; margin: 15px 0; background-color: #f0f2f6; border-radius: 5px;">
+                                ⬇️ <b>前一个生产顺序组最晚完成的款式 {prev_end_info['style']} 
+                                结束时间: {prev_end_info['date']} ({prev_end_info['remark']})</b>
+                            </div>
+                            """, unsafe_allow_html=True)
+                        
+                        st.write(f"#### 生产顺序: {order}")
+                        
+                        # 创建数据表
+                        preview_data = []
+                        for style in order_styles:
+                            # 计算缝纫结束时间
+                            sewing_start_time = datetime.combine(style["sewing_start_date"], datetime.min.time())
+                            start_time_period = style.get("start_time_period", "上午")
+                            schedule = calculate_schedule(
+                                sewing_start_time, 
+                                style["process_type"], 
+                                style["cycle"], 
+                                style["order_quantity"], 
+                                style["daily_production"],
+                                start_time_period
+                            )
+                            
+                            sewing_end_time = schedule["缝纫"]["缝纫结束"]["时间点"]
+                            sewing_end_remark = schedule["缝纫"]["缝纫结束"].get("备注", "")
+                            
+                            preview_data.append({
+                                "款号": style["style_number"],
+                                "工序": style["process_type"],
+                                "缝纫开始日期": f"{style['sewing_start_date']} ({start_time_period})",
+                                "缝纫结束日期": f"{sewing_end_time.date()} ({sewing_end_remark})",
+                                "订单数量": style["order_quantity"],
+                                "日产量": style["daily_production"],
+                                "生产天数": round(style["order_quantity"] * 1.05 / style["daily_production"], 1)
+                            })
+                        
+                        # 显示表格
+                        st.table(preview_data)
+                        
+                        # 如果这个组有多个款式，计算并显示组内最晚结束时间
+                        latest_end_time = None
+                        latest_end_remark = ""
+                        latest_style = None
+                        
+                        for style in order_styles:
+                            sewing_start_time = datetime.combine(style["sewing_start_date"], datetime.min.time())
+                            start_time_period = style.get("start_time_period", "上午")
+                            schedule = calculate_schedule(
+                                sewing_start_time, 
+                                style["process_type"], 
+                                style["cycle"], 
+                                style["order_quantity"], 
+                                style["daily_production"],
+                                start_time_period
+                            )
+                            
+                            end_time = schedule["缝纫"]["缝纫结束"]["时间点"]
+                            end_remark = schedule["缝纫"]["缝纫结束"].get("备注", "")
+                            
+                            if latest_end_time is None or end_time > latest_end_time:
+                                latest_end_time = end_time
+                                latest_end_remark = end_remark
+                                latest_style = style["style_number"]
+                        
+                        # 更新前一个顺序组的结束信息，用于下一个顺序组的显示
+                        prev_end_info = {
+                            "style": latest_style,
+                            "date": latest_end_time.date(),
+                            "remark": latest_end_remark
+                        }
+                        
+                        if len(order_styles) > 1:
+                            st.info(f"⚠️ 注意：该生产顺序组中，款号 **{latest_style}** 的缝纫结束时间最晚：**{latest_end_time.date()} ({latest_end_remark})**，下一个生产顺序组将从此时间开始。")
+            
+            # 显示无生产组的款式
+            if "无生产组" in grouped_styles and grouped_styles["无生产组"]:
+                st.write("### 无生产组的款式")
+                no_group_data = []
+                for style in grouped_styles["无生产组"]:
+                    no_group_data.append({
+                        "生产顺序": style.get("production_order", "-"),
+                        "款号": style["style_number"],
+                        "工序": style["process_type"],
+                        "缝纫开始日期": f"{style['sewing_start_date']} ({style.get('start_time_period', '上午')})",
+                        "周期": style["cycle"],
+                        "订单数量": style["order_quantity"],
+                        "日产量": style["daily_production"]
+                    })
+                st.table(no_group_data)
+                
         col1, col2 = st.columns(2)
         
         with col1:
             if st.button("生成所有生产流程图"):
+                # 根据用户选择决定是否重新排序
+                if enable_sequential_production:
+                    # 重新安排同一生产组内款式的缝纫开始时间
+                    styles_to_process = rearrange_styles_by_production_group(st.session_state["all_styles"])
+                else:
+                    styles_to_process = st.session_state["all_styles"]
+                    
                 # 创建一个临时目录来存储图片
                 with tempfile.TemporaryDirectory() as temp_dir:
                     # 生成所有图表
-                    for style in st.session_state["all_styles"]:
+                    for style in styles_to_process:
                         sewing_start_time = datetime.combine(style["sewing_start_date"], datetime.min.time())
                         start_time_period = style.get("start_time_period", "上午")  # 获取上午/下午信息
                         schedule = calculate_schedule(
@@ -1417,9 +1736,15 @@ else:
         
         with col2:
             if st.button("生成部门时间线图"):
+                # 根据用户选择决定是否重新排序
+                if enable_sequential_production:
+                    # 重新安排同一生产组内款式的缝纫开始时间
+                    styles_to_process = rearrange_styles_by_production_group(st.session_state["all_styles"])
+                else:
+                    styles_to_process = st.session_state["all_styles"]
                 # 生成部门时间线图
-                zip_path = generate_department_wise_plots(st.session_state["all_styles"])
-                
+                #zip_path = generate_department_wise_plots(st.session_state["all_styles"])
+                zip_path = generate_department_wise_plots(styles_to_process)
                 # 提供ZIP文件下载
                 with open(zip_path, "rb") as f:
                     st.download_button(
