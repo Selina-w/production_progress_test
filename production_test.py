@@ -1165,8 +1165,12 @@ def generate_department_wise_plots(styles):
         fig.savefig(fig_path, dpi=300, bbox_inches="tight")
         plt.close(fig)
     
-    # Now create production group specific plots
+    # Now create production group specific plots - only for 缝纫 department
     for department in df["department"].unique():
+        # Skip all departments except 缝纫
+        if department != "缝纫":
+            continue
+            
         # Get unique production groups for this department
         dept_data = df[df["department"] == department].copy()
         production_groups = dept_data["production_group"].unique()
@@ -1188,14 +1192,118 @@ def generate_department_wise_plots(styles):
             fig.patch.set_facecolor('white')
             ax.set_facecolor('white')
             
-            # Set up similar to before, but with production group specific title
-            # [rest of plotting code similar to the original department plot]
+            # Implement the actual plotting code similar to the original department plot
+            # Calculate positions for unique styles (y-axis)
+            unique_styles = group_data["style_number"].unique()
+            y_positions = {style: i for i, style in enumerate(unique_styles)}
+            
+            # Plot timeline for each style
+            for style, y in y_positions.items():
+                style_data = group_data[group_data["style_number"] == style].sort_values("date")
+                
+                # Normalize dates to 0-1 range for x-axis
+                date_range = (group_data["date"].max() - group_data["date"].min()).days
+                if date_range == 0:
+                    date_range = 1  # Avoid division by zero
+                
+                min_date = group_data["date"].min()
+                
+                # Draw points and text for each step
+                x_positions = []
+                
+                for _, row in style_data.iterrows():
+                    # Calculate normalized position on x-axis
+                    x = (row["date"] - min_date).days / date_range
+                    x_positions.append(x)
+                    
+                    # Draw point
+                    ax.scatter(x, y, s=100, color='blue', edgecolor='black', zorder=3)
+                    
+                    # Add text with step name and date
+                    # Adjust position based on step type
+                    text_x = x
+                    y_offset = -0.3  # Default to below the timeline
+                    
+                    # Special text box for certain steps
+                    text_box = dict(boxstyle="round,pad=0.3", facecolor='lightyellow', alpha=0.7, edgecolor='black')
+                    
+                    # Change position for certain steps
+                    if ((department == "裁床" and row["step"] == "裁剪完成") or 
+                        (department == "缝纫" and (row["step"] == "缝纫结束" or row["step"] == "缝纫开始")) or 
+                        (department == "后整" and row["step"] == "包装")):
+                        y_offset = 0.3  # Place above the timeline
+                    
+                    step_text = f"{row['step']}\n{row['date'].strftime('%Y/%m/%d')}"
+                    
+                    # 为部门时间线图的单独绘制中添加备注显示
+                    # 查找原始数据中的备注信息
+                    for style_info in styles:
+                        if style_info["style_number"] == row["style_number"]:
+                            sewing_start_time = datetime.combine(style_info["sewing_start_date"], datetime.min.time())
+                            start_time_period = style_info.get("start_time_period", "上午")
+                            orig_schedule = calculate_schedule(
+                                sewing_start_time, 
+                                style_info["process_type"], 
+                                style_info["cycle"], 
+                                style_info["order_quantity"], 
+                                style_info["daily_production"],
+                                start_time_period
+                            )
+                            if department == "缝纫" and (row["step"] == "缝纫结束" or row["step"] == "缝纫开始") and "备注" in orig_schedule["缝纫"][row["step"]]:
+                                step_text = f"{row['step']}\n{row['date'].strftime('%Y/%m/%d')}\n{orig_schedule['缝纫'][row['step']]['备注']}"
+                    
+                    ax.text(
+                        text_x, y + y_offset,
+                        step_text,
+                        ha='center',
+                        va='bottom' if y_offset > 0 else 'top',  # Adjust vertical alignment based on position
+                        fontsize=12,
+                        fontweight='bold',
+                        bbox=text_box,
+                        zorder=5
+                    )
+                
+                # Connect points with lines
+                if len(x_positions) > 1:
+                    ax.plot(x_positions, [y] * len(x_positions), '-',
+                           color='black',
+                           alpha=0.7,
+                           zorder=2,
+                           linewidth=1.5)
+            
+            # Set up the axes
+            ax.set_yticks(list(y_positions.values()))
+            # Include production group in y-axis labels if available
+            y_labels = []
+            for style in y_positions.keys():
+                style_rows = group_data[group_data["style_number"] == style]
+                production_group = style_rows.iloc[0]["production_group"] if len(style_rows) > 0 and style_rows.iloc[0]["production_group"] else ""
+                
+                # 查找生产顺序
+                original_style = next((s for s in styles if s["style_number"] == style), None)
+                if original_style and "production_order" in original_style:
+                    production_order = original_style["production_order"]
+                    if production_group:
+                        y_labels.append(f"款号: {style} (生产组: {production_group}, 序号: {production_order})")
+                    else:
+                        y_labels.append(f"款号: {style} (序号: {production_order})")
+                else:
+                    if production_group:
+                        y_labels.append(f"款号: {style} (生产组: {production_group})")
+                    else:
+                        y_labels.append(f"款号: {style}")
+            
+            ax.set_yticklabels(y_labels, fontsize=14, fontweight='bold')
+            ax.set_xticks([])
+            ax.set_xlim(-0.02, 1.02)
+            ax.set_ylim(min(y_positions.values()) - 0.7, max(y_positions.values()) + 0.7)
             
             # Set title to include production group
             ax.set_title(f"{department} - 生产组: {group}",
                         fontsize=24,
                         fontweight='bold',
                         y=1.02, fontproperties=prop)
+            ax.set_frame_on(False)
                         
             # Save with production group in filename
             group_fig_path = os.path.join(temp_dir, f"{department}_生产组_{group}.png")
