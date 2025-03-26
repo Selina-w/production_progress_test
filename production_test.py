@@ -1098,15 +1098,20 @@ def generate_department_wise_plots(styles):
                     step_text = f"{row['step']}\n{row['date'].strftime('%Y/%m/%d')}"
                     
                     # 为部门时间线图的单独绘制中添加备注显示
-                    # 查找原始数据中的备注信息
-                    for style in styles:
-                        if style["style_number"] == row["style_number"]:
-                            sewing_start_time = datetime.combine(style["sewing_start_date"], datetime.min.time())
-                            orig_schedule = calculate_schedule(sewing_start_time, style["process_type"], style["cycle"], style["order_quantity"], style["daily_production"])
-                            if department == "缝纫" and row["step"] == "缝纫结束" and "备注" in orig_schedule["缝纫"]["缝纫结束"]:
-                                step_text = f"{row['step']}\n{row['date'].strftime('%Y/%m/%d')}\n{orig_schedule['缝纫']['缝纫结束']['备注']}"
-                            if department == "缝纫" and row["step"] == "缝纫开始" and "备注" in orig_schedule["缝纫"]["缝纫开始"]:
-                                step_text = f"{row['step']}\n{row['date'].strftime('%Y/%m/%d')}\n{orig_schedule['缝纫']['缝纫开始']['备注']}"
+                    # 查找原始数据中的备注信息 - 使用缓存的schedule数据
+                    if department == "缝纫" and (row["step"] == "缝纫结束" or row["step"] == "缝纫开始"):
+                        for style_info in styles:
+                            if style_info["style_number"] == row["style_number"]:
+                                if row["step"] == "缝纫开始":
+                                    # 缝纫开始步骤直接使用start_time_period作为备注
+                                    start_time_period = style_info.get("start_time_period", "上午")
+                                    step_text = f"{row['step']}\n{row['date'].strftime('%Y/%m/%d')}\n{start_time_period}"
+                                elif row["step"] == "缝纫结束":
+                                    # 从缓存的schedule中获取缝纫结束备注
+                                    if "schedule" in style_info and "缝纫" in style_info["schedule"] and "缝纫结束" in style_info["schedule"]["缝纫"] and "备注" in style_info["schedule"]["缝纫"]["缝纫结束"]:
+                                        end_remark = style_info["schedule"]["缝纫"]["缝纫结束"]["备注"]
+                                        step_text = f"{row['step']}\n{row['date'].strftime('%Y/%m/%d')}\n{end_remark}"
+                                break  # 找到对应的style后就退出循环
                     
                     ax.text(
                         text_x, y + y_offset,
@@ -1238,31 +1243,20 @@ def generate_department_wise_plots(styles):
                     step_text = f"{row['step']}\n{row['date'].strftime('%Y/%m/%d')}"
                     
                     # 为部门时间线图的单独绘制中添加备注显示
-                    # 查找原始数据中的备注信息 - 增强的备注显示逻辑
-                    for style_info in styles:
-                        if style_info["style_number"] == row["style_number"]:
-                            sewing_start_time = datetime.combine(style_info["sewing_start_date"], datetime.min.time())
-                            start_time_period = style_info.get("start_time_period", "上午")
-                            
-                            # 确保缝纫步骤的备注正确显示
-                            if department == "缝纫" and (row["step"] == "缝纫结束" or row["step"] == "缝纫开始"):
-                                # 首先检查是否已经有上午/下午的备注
-                                if row["step"] == "缝纫开始" and start_time_period:
+                    # 查找原始数据中的备注信息 - 使用缓存的schedule数据
+                    if department == "缝纫" and (row["step"] == "缝纫结束" or row["step"] == "缝纫开始"):
+                        for style_info in styles:
+                            if style_info["style_number"] == row["style_number"]:
+                                if row["step"] == "缝纫开始":
+                                    # 缝纫开始步骤直接使用start_time_period作为备注
+                                    start_time_period = style_info.get("start_time_period", "上午")
                                     step_text = f"{row['step']}\n{row['date'].strftime('%Y/%m/%d')}\n{start_time_period}"
                                 elif row["step"] == "缝纫结束":
-                                    # 为缝纫结束步骤计算备注
-                                    orig_schedule = calculate_schedule(
-                                        sewing_start_time, 
-                                        style_info["process_type"], 
-                                        style_info["cycle"], 
-                                        style_info["order_quantity"], 
-                                        style_info["daily_production"],
-                                        start_time_period
-                                    )
-                                    
-                                    if "缝纫" in orig_schedule and row["step"] in orig_schedule["缝纫"] and "备注" in orig_schedule["缝纫"][row["step"]]:
-                                        step_text = f"{row['step']}\n{row['date'].strftime('%Y/%m/%d')}\n{orig_schedule['缝纫'][row['step']]['备注']}"
-                    
+                                    # 从缓存的schedule中获取缝纫结束备注
+                                    if "schedule" in style_info and "缝纫" in style_info["schedule"] and "缝纫结束" in style_info["schedule"]["缝纫"] and "备注" in style_info["schedule"]["缝纫"]["缝纫结束"]:
+                                        end_remark = style_info["schedule"]["缝纫"]["缝纫结束"]["备注"]
+                                        step_text = f"{row['step']}\n{row['date'].strftime('%Y/%m/%d')}\n{end_remark}"
+                                break  # 找到对应的style后就退出循环
                     ax.text(
                         text_x, y + y_offset,
                         step_text,
