@@ -1238,21 +1238,30 @@ def generate_department_wise_plots(styles):
                     step_text = f"{row['step']}\n{row['date'].strftime('%Y/%m/%d')}"
                     
                     # 为部门时间线图的单独绘制中添加备注显示
-                    # 查找原始数据中的备注信息
+                    # 查找原始数据中的备注信息 - 增强的备注显示逻辑
                     for style_info in styles:
                         if style_info["style_number"] == row["style_number"]:
                             sewing_start_time = datetime.combine(style_info["sewing_start_date"], datetime.min.time())
                             start_time_period = style_info.get("start_time_period", "上午")
-                            orig_schedule = calculate_schedule(
-                                sewing_start_time, 
-                                style_info["process_type"], 
-                                style_info["cycle"], 
-                                style_info["order_quantity"], 
-                                style_info["daily_production"],
-                                start_time_period
-                            )
-                            if department == "缝纫" and (row["step"] == "缝纫结束" or row["step"] == "缝纫开始") and "备注" in orig_schedule["缝纫"][row["step"]]:
-                                step_text = f"{row['step']}\n{row['date'].strftime('%Y/%m/%d')}\n{orig_schedule['缝纫'][row['step']]['备注']}"
+                            
+                            # 确保缝纫步骤的备注正确显示
+                            if department == "缝纫" and (row["step"] == "缝纫结束" or row["step"] == "缝纫开始"):
+                                # 首先检查是否已经有上午/下午的备注
+                                if row["step"] == "缝纫开始" and start_time_period:
+                                    step_text = f"{row['step']}\n{row['date'].strftime('%Y/%m/%d')}\n{start_time_period}"
+                                elif row["step"] == "缝纫结束":
+                                    # 为缝纫结束步骤计算备注
+                                    orig_schedule = calculate_schedule(
+                                        sewing_start_time, 
+                                        style_info["process_type"], 
+                                        style_info["cycle"], 
+                                        style_info["order_quantity"], 
+                                        style_info["daily_production"],
+                                        start_time_period
+                                    )
+                                    
+                                    if "缝纫" in orig_schedule and row["step"] in orig_schedule["缝纫"] and "备注" in orig_schedule["缝纫"][row["step"]]:
+                                        step_text = f"{row['step']}\n{row['date'].strftime('%Y/%m/%d')}\n{orig_schedule['缝纫'][row['step']]['备注']}"
                     
                     ax.text(
                         text_x, y + y_offset,
@@ -1262,7 +1271,7 @@ def generate_department_wise_plots(styles):
                         fontsize=12,
                         fontweight='bold',
                         bbox=text_box,
-                        zorder=5
+                        zorder=5, fontproperties=prop
                     )
                 
                 # Connect points with lines
@@ -1295,7 +1304,7 @@ def generate_department_wise_plots(styles):
                     else:
                         y_labels.append(f"款号: {style}")
             
-            ax.set_yticklabels(y_labels, fontsize=14, fontweight='bold')
+            ax.set_yticklabels(y_labels, fontsize=14, fontweight='bold', fontproperties=prop)
             ax.set_xticks([])
             ax.set_xlim(-0.02, 1.02)
             ax.set_ylim(min(y_positions.values()) - 0.7, max(y_positions.values()) + 0.7)
@@ -1304,7 +1313,7 @@ def generate_department_wise_plots(styles):
             ax.set_title(f"{department} - 生产组: {group}",
                         fontsize=24,
                         fontweight='bold',
-                        y=1.02)
+                        y=1.02, fontproperties=prop)
             ax.set_frame_on(False)
 
             # Save with production group in filename
