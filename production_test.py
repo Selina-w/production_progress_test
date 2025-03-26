@@ -843,7 +843,7 @@ def plot_timeline(schedule, process_type, confirmation_period):
                 step_text = f"{step}\n{date.strftime('%Y/%m/%d')}"
                 
                 # 如果有备注信息，添加到文本中（针对缝纫结束时间）
-                if dept == "缝纫" and step == "缝纫结束" and "备注" in schedule[dept][step]:
+                if dept == "缝纫" and step in ["缝纫结束", "缝纫开始"] and "备注" in schedule[dept][step]:
                     step_text = f"{step}\n{date.strftime('%Y/%m/%d')}\n{schedule[dept][step]['备注']}"
                 
                 # 特殊处理印布的印布后整，将其放在时间线上方
@@ -1105,6 +1105,8 @@ def generate_department_wise_plots(styles):
                             orig_schedule = calculate_schedule(sewing_start_time, style["process_type"], style["cycle"], style["order_quantity"], style["daily_production"])
                             if department == "缝纫" and row["step"] == "缝纫结束" and "备注" in orig_schedule["缝纫"]["缝纫结束"]:
                                 step_text = f"{row['step']}\n{row['date'].strftime('%Y/%m/%d')}\n{orig_schedule['缝纫']['缝纫结束']['备注']}"
+                            if department == "缝纫" and row["step"] == "缝纫开始" and "备注" in orig_schedule["缝纫"]["缝纫开始"]:
+                                step_text = f"{row['step']}\n{row['date'].strftime('%Y/%m/%d')}\n{orig_schedule['缝纫']['缝纫开始']['备注']}"
                     
                     ax.text(
                         text_x, y + y_offset,
