@@ -129,7 +129,7 @@ def get_department_steps(process_type=None):
     else:  # "满花局花绣花"
         return all_departments
 
-def calculate_schedule(sewing_start_date, process_type, confirmation_period, order_quantity, daily_production):
+def calculate_schedule(sewing_start_date, process_type, confirmation_period, order_quantity, daily_production, start_time_period="上午"):
     """ 计算整个生产流程的时间安排 """
     schedule = {}
     
@@ -435,9 +435,9 @@ def calculate_schedule(sewing_start_date, process_type, confirmation_period, ord
     schedule["辅料"]["物理检测"] = {"时间点": schedule["辅料"]["辅料"]["时间点"] + timedelta(days=1)}
 
     # 9. 计算缝纫工艺
-    schedule["缝纫"]["缝纫开始"] = {"时间点": sewing_start_date} #{"时间点": schedule["缝纫"]["缝纫工艺"]["时间点"] + timedelta(days=2)}
+    schedule["缝纫"]["缝纫开始"] = {"时间点": sewing_start_date, "备注": start_time_period  # 添加上午/下午信息} #{"时间点": schedule["缝纫"]["缝纫工艺"]["时间点"] + timedelta(days=2)}
     
-    # 计算缝纫结束时间，根据小数部分决定是当天中午结束还是下一天结束
+    # 计算缝纫结束时间，根据小数部分决定是当天上午结束还是下午结束或第二天
     sewing_days_float = order_quantity * 1.05 / daily_production
     sewing_days_int = int(sewing_days_float)
     sewing_days_decimal = sewing_days_float - sewing_days_int
@@ -456,6 +456,46 @@ def calculate_schedule(sewing_start_date, process_type, confirmation_period, ord
             "时间点": sewing_end_date,
             "备注": "全天"
         }
+
+    # 考虑开始时间是上午还是下午
+    if start_time_period == "上午":
+        if sewing_days_decimal <= 0.5:
+            # 如果小数部分小于等于0.5，则当天下午结束
+            sewing_end_date = schedule["缝纫"]["缝纫开始"]["时间点"] + timedelta(days=sewing_days_int)
+            schedule["缝纫"]["缝纫结束"] = {
+                "时间点": sewing_end_date,
+                "备注": "下午" if sewing_days_decimal > 0 else "上午"
+            }
+        else:
+            # 如果小数部分大于0.5，则第二天上午结束
+            sewing_end_date = schedule["缝纫"]["缝纫开始"]["时间点"] + timedelta(days=sewing_days_int + 1)
+            schedule["缝纫"]["缝纫结束"] = {
+                "时间点": sewing_end_date,
+                "备注": "上午"
+            }
+    else:  # 下午开始
+        if sewing_days_decimal <= 0:
+            # 如果刚好整数天，则最后一天下午结束
+            sewing_end_date = schedule["缝纫"]["缝纫开始"]["时间点"] + timedelta(days=sewing_days_int)
+            schedule["缝纫"]["缝纫结束"] = {
+                "时间点": sewing_end_date,
+                "备注": "下午"
+            }
+        elif sewing_days_decimal <= 0.5:
+            # 如果小数部分小于等于0.5，则第二天上午结束
+            sewing_end_date = schedule["缝纫"]["缝纫开始"]["时间点"] + timedelta(days=sewing_days_int + 1)
+            schedule["缝纫"]["缝纫结束"] = {
+                "时间点": sewing_end_date,
+                "备注": "上午"
+            }
+        else:
+            # 如果小数部分大于0.5，则第二天下午结束
+            sewing_end_date = schedule["缝纫"]["缝纫开始"]["时间点"] + timedelta(days=sewing_days_int + 1)
+            schedule["缝纫"]["缝纫结束"] = {
+                "时间点": sewing_end_date,
+                "备注": "下午"
+            }
+
 
     # 10. 计算后整工艺
     schedule["后整"]["后整工艺"] = {"时间点": schedule["缝纫"]["缝纫工艺"]["时间点"]}
@@ -1198,12 +1238,13 @@ else:
 
     # 添加Excel上传功能
     st.subheader("方式一：上传Excel文件")
-    uploaded_file = st.file_uploader("上传Excel文件 (必需列：款号、缝纫开始时间、工序、确认周转周期)", type=['xlsx', 'xls'])
+    uploaded_file = st.file_uploader("上传Excel文件 (必需列：款号、缝纫开始日期、缝纫开始时间、工序、确认周转周期)", type=['xlsx', 'xls'])
+
 
     if uploaded_file is not None:
         try:
             df = pd.read_excel(uploaded_file)
-            required_columns = ['款号', '缝纫开始日期', '工序', '确认周转周期', '订单数量', '日产量', '生产组']
+            required_columns = ['款号', '缝纫开始日期', '缝纫开始时间', '工序', '确认周转周期', '订单数量', '日产量', '生产组']
             
             # Check if all required columns exist
             if not all(col in df.columns for col in required_columns):
@@ -1221,9 +1262,12 @@ else:
                     # Add new styles from Excel
                     new_styles = []
                     for _, row in df.iterrows():
+                        # 确保缝纫开始时间是上午或下午，默认为上午
+                        start_time = row['缝纫开始时间'] if row['缝纫开始时间'] in ["上午", "下午"] else "上午"
                         new_style = {
                             "style_number": str(row['款号']),
                             "sewing_start_date": row['缝纫开始日期'],
+                            "start_time_period": start_time,
                             "process_type": row['工序'],
                             "cycle": int(row['确认周转周期']),
                             "order_quantity": int(row['订单数量']),
@@ -1250,8 +1294,14 @@ else:
         # 批量输入款号，每行一个
         style_numbers = st.text_area("请输入款号(每行一个):", "")
         sewing_start_date = st.date_input("请选择缝纫开始日期:", min_value=datetime.today().date())
-        process_options = ["满花局花绣花", "满花局花", "满花绣花", "局花绣花", "满花", "局花", "绣花"]
-        selected_process = st.selectbox("请选择工序:", process_options)
+
+        # 添加上午/下午选择
+        col1, col2 = st.columns(2)
+        with col1:
+            start_time_period = st.selectbox("缝纫开始时间:", ["上午", "下午"])
+        with col2:
+            process_options = ["满花局花绣花", "满花局花", "满花绣花", "局花绣花", "满花", "局花", "绣花"]
+            selected_process = st.selectbox("请选择工序:", process_options)
         # 添加新字段
         order_quantity = st.number_input("订单数量:", min_value=1, value=100)
         daily_production = st.number_input("日产量:", min_value=1, value=50)
@@ -1268,6 +1318,7 @@ else:
                 new_style = {
                     "style_number": style_number,
                     "sewing_start_date": sewing_start_date,
+                    "start_time_period": start_time_period,  # 新增上午/下午字段
                     "process_type": selected_process,
                     "cycle": cycle,
                     "order_quantity": order_quantity,
@@ -1289,8 +1340,9 @@ else:
         for idx, style in enumerate(st.session_state["all_styles"]):
             col1, col2 = st.columns([4, 1])
             with col1:
+                time_period = style.get("start_time_period", "上午")  # 默认为上午
                 st.write(f"{idx + 1}. 款号: {style['style_number']}, 工序: {style['process_type']}, " 
-                    f"缝纫开始日期: {style['sewing_start_date']}, 周期: {style['cycle']}, "
+                    f"缝纫开始日期: {style['sewing_start_date']} {time_period}, 周期: {style['cycle']}, "
                     f"订单数量: {style.get('order_quantity', '-')}, 日产量: {style.get('daily_production', '-')}, "
                     f"生产组号: {style.get('production_group', '-')}")
             with col2:
@@ -1322,8 +1374,15 @@ else:
                     # 生成所有图表
                     for style in st.session_state["all_styles"]:
                         sewing_start_time = datetime.combine(style["sewing_start_date"], datetime.min.time())
-                        schedule = calculate_schedule(sewing_start_time, style["process_type"], style["cycle"], style["order_quantity"], style["daily_production"])
-                        
+                        start_time_period = style.get("start_time_period", "上午")  # 获取上午/下午信息
+                        schedule = calculate_schedule(
+                            sewing_start_time, 
+                            style["process_type"], 
+                            style["cycle"], 
+                            style["order_quantity"], 
+                            style["daily_production"],
+                            start_time_period
+                        )
                         # 设置当前款号和生产组用于标题显示
                         st.session_state["style_number"] = style["style_number"]
                         st.session_state["production_group"] = style.get("production_group", "")
