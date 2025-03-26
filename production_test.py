@@ -435,7 +435,7 @@ def calculate_schedule(sewing_start_date, process_type, confirmation_period, ord
     schedule["辅料"]["物理检测"] = {"时间点": schedule["辅料"]["辅料"]["时间点"] + timedelta(days=1)}
 
     # 9. 计算缝纫工艺
-    schedule["缝纫"]["缝纫开始"] = sewing_start_date #{"时间点": schedule["缝纫"]["缝纫工艺"]["时间点"] + timedelta(days=2)}
+    schedule["缝纫"]["缝纫开始"] = {"时间点": sewing_start_date} #{"时间点": schedule["缝纫"]["缝纫工艺"]["时间点"] + timedelta(days=2)}
     
     # 计算缝纫结束时间，根据小数部分决定是当天中午结束还是下一天结束
     sewing_days_float = order_quantity * 1.05 / daily_production
