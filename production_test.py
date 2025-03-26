@@ -1175,17 +1175,7 @@ def generate_department_wise_plots(styles):
         dept_data = df[df["department"] == department].copy()
         production_groups = dept_data["production_group"].unique()
         
-        # Define a list of background colors, border colors and theme colors for different production groups
-        style_themes = [
-            {'bg': '#f0f8ff', 'border': '#4682b4', 'accent': '#1e5799'}, # Blue theme
-            {'bg': '#fff0f5', 'border': '#db7093', 'accent': '#c71585'}, # Pink theme
-            {'bg': '#f0fff0', 'border': '#6b8e23', 'accent': '#556b2f'}, # Green theme
-            {'bg': '#fff8dc', 'border': '#b8860b', 'accent': '#8b6508'}, # Yellow theme
-            {'bg': '#e6e6fa', 'border': '#6a5acd', 'accent': '#483d8b'}, # Purple theme
-            {'bg': '#ffe4e1', 'border': '#ff6347', 'accent': '#cd5c5c'}  # Red theme
-        ]
-        
-        for idx, group in enumerate(production_groups):
+        for group in production_groups:
             if not group:  # Skip empty production groups
                 continue
                 
@@ -1199,21 +1189,14 @@ def generate_department_wise_plots(styles):
             # Create figure
             base_width = max(20, int((group_data["date"].max() - group_data["date"].min()).days / 41 * 40))
             fig, ax = plt.subplots(figsize=(base_width, len(group_data["style_number"].unique()) * 3))
-            # Use a different color theme for each production group
-            theme = style_themes[idx % len(style_themes)]  # Cycle through themes if more groups than themes
-            fig.patch.set_facecolor(theme['bg'])
-            ax.set_facecolor(theme['bg'])
-            
-            # Add a subtle border around the plot with themed color
-            for spine in ax.spines.values():
-                spine.set_visible(True)
-                spine.set_color(theme['border'])
-                spine.set_linewidth(2)
-                spine.set_alpha(0.6)
+            fig.patch.set_facecolor('white')
+            ax.set_facecolor('white')
             
             # Implement the actual plotting code similar to the original department plot
-            # Calculate positions for unique styles (y-axis)
+            # Calculate positions for unique styles (y-axis) - REVERSED ORDER
             unique_styles = group_data["style_number"].unique()
+            # Reverse the order of styles for display
+            unique_styles = unique_styles[::-1]
             y_positions = {style: i for i, style in enumerate(unique_styles)}
             
             # Plot timeline for each style
@@ -1235,19 +1218,16 @@ def generate_department_wise_plots(styles):
                     x = (row["date"] - min_date).days / date_range
                     x_positions.append(x)
                     
-                    # Draw point with themed color
-                    ax.scatter(x, y, s=100, color=theme['accent'], edgecolor=theme['border'], zorder=3)
+                    # Draw point - using standard style
+                    ax.scatter(x, y, s=100, color='blue', edgecolor='black', zorder=3)
                     
                     # Add text with step name and date
                     # Adjust position based on step type
                     text_x = x
                     y_offset = -0.3  # Default to below the timeline
                     
-                    # Special text box for certain steps with themed color
-                    text_box = dict(boxstyle="round,pad=0.3", 
-                                  facecolor=theme['bg'], 
-                                  alpha=0.9, 
-                                  edgecolor=theme['border'])
+                    # Special text box for certain steps
+                    text_box = dict(boxstyle="round,pad=0.3", facecolor='lightyellow', alpha=0.7, edgecolor='black')
                     
                     # Change position for certain steps
                     if ((department == "裁床" and row["step"] == "裁剪完成") or 
@@ -1282,16 +1262,16 @@ def generate_department_wise_plots(styles):
                         fontsize=12,
                         fontweight='bold',
                         bbox=text_box,
-                        zorder=5, fontproperties=prop
+                        zorder=5
                     )
                 
-                # Connect points with lines using themed color
+                # Connect points with lines
                 if len(x_positions) > 1:
                     ax.plot(x_positions, [y] * len(x_positions), '-',
-                           color=theme['border'],
-                           alpha=0.8,
+                           color='black',
+                           alpha=0.7,
                            zorder=2,
-                           linewidth=2)
+                           linewidth=1.5)
             
             # Set up the axes
             ax.set_yticks(list(y_positions.values()))
@@ -1315,31 +1295,18 @@ def generate_department_wise_plots(styles):
                     else:
                         y_labels.append(f"款号: {style}")
             
-            ax.set_yticklabels(y_labels, fontsize=14, fontweight='bold', fontproperties=prop)
+            ax.set_yticklabels(y_labels, fontsize=14, fontweight='bold')
             ax.set_xticks([])
             ax.set_xlim(-0.02, 1.02)
             ax.set_ylim(min(y_positions.values()) - 0.7, max(y_positions.values()) + 0.7)
             
-            # Set title to include production group with themed color
-            title = f"{department} - 生产组: {group}"
-            ax.set_title(title,
+            # Set title to include production group - using standard style
+            ax.set_title(f"{department} - 生产组: {group}",
                         fontsize=24,
                         fontweight='bold',
-                        color=theme['accent'],
-                        y=1.02, fontproperties=prop)
-            #ax.set_frame_on(False)
+                        y=1.02)
+            ax.set_frame_on(False)
 
-            # Add a visual indicator of the production group in the top-left
-            ax.text(0.01, 1.01, f"生产组 {group}", 
-                   transform=ax.transAxes, 
-                   fontsize=16, 
-                   fontweight='bold',
-                   color=theme['accent'],
-                   bbox=dict(facecolor=theme['bg'], 
-                           edgecolor=theme['border'],
-                           boxstyle='round,pad=0.5',
-                           alpha=0.8))
-                        
             # Save with production group in filename
             group_fig_path = os.path.join(temp_dir, f"{department}_生产组_{group}.png")
             fig.savefig(group_fig_path, dpi=300, bbox_inches="tight")
