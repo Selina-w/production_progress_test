@@ -1259,7 +1259,7 @@ def generate_department_wise_plots(styles):
             group_data = pd.merge(group_data, earliest_dates, on="style_number", how="left")
             
             # 3. 按最早日期排序（升序，最早的在前），然后按款式号排序
-            group_data.sort_values(by=["earliest_date", "style_number"], ascending=[True, True], inplace=True)
+            group_data.sort_values(by=["earliest_date", "style_number"], ascending=[False, False], inplace=True)
             
             # 4. 获取排序后的唯一款式号列表（保持顺序）
             unique_sorted_styles = group_data["style_number"].unique()
