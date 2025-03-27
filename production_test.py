@@ -1968,7 +1968,7 @@ def display_schedule_steps(schedule):
 if st.button("预览"):
     st.session_state["preview_clicked"] = True
     style_number = st.session_state["style_number"]
-    show_sewing_start = st.session_state["show_sewing_start"]
+    show_sewing_start = st.session_state["sewing_start_date"]
     period_str = st.session_state.get("period", None)
     
     # 获取当前表格中的数据
