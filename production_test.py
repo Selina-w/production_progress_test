@@ -839,9 +839,21 @@ def plot_timeline(schedule, process_type, confirmation_period):
                     or (dept == "后整" and step == "包装")):
                     y_offset = 0.3  # Place above the timeline
                 
-                # 特殊处理面料的物理检测+验布，将文本框向右偏移
-                #if dept == "面料" and step == "物理检测+验布":
-                #    text_x += 0.01  # 向右偏移
+                 # 1. 对于包含"满花"的流程（除了"满花绣花"）：将"满花样品"放到时间线上方
+                if dept == "产前确认" and step == "满花样品" and "满花" in process_type and process_type != "满花绣花":
+                    y_offset = 0.3  # 放在时间线上方
+                
+                # 2. 在"满花局花绣花"的情况下：将"菊花样品"放到时间线上方，并与时间线保持一个文本框的距离
+                if dept == "产前确认" and step == "局花样品" and process_type == "满花局花绣花":
+                    y_offset = 0.6  # 放在时间线上方，有更大的距离
+                
+                # 3. 除了"满花局花绣花"或"满花"的情况下：将"版型"步骤放到时间线下方，与时间线有一个文本框的距离
+                if dept == "产前确认" and step == "版型" and process_type != "满花局花绣花" and process_type != "满花":
+                    y_offset = -0.6  # 放在时间线下方，有更大的距离
+                
+                # 4. 在"满花"的情况下：将"代用样品发送"放到时间线上方
+                if dept == "产前确认" and step == "代用样品发送" and process_type == "满花":
+                    y_offset = 0.3  # 放在时间线上方
                 
                 text = ax.text(text_x, y + y_offset, step_text, 
                                ha='center', 
