@@ -83,51 +83,36 @@ def get_department_steps(process_type=None):
         "工艺": ["船样检测摄影", "外观"]
     }
     
+    # If no process type is specified, return all departments
     if process_type is None:
         return all_departments
-        
-    # Filter departments based on process type
-    if process_type == "满花局花":
-        # Exclude 绣花 department
-        filtered_departments = {k: v for k, v in all_departments.items() if k != "绣花"}
+
+    # Define exclusions for different process types
+    exclusion_map = {
+        "满花局花": ["绣花"],
+        "满花绣花": ["局花"],
+        "局花绣花": ["满花"],
+        "满花": ["局花", "绣花"],
+        "局花": ["满花", "绣花"],
+        "绣花": ["满花", "局花"]
+    }
+
+    # If process_type is invalid, return all departments
+    if process_type not in exclusion_map and process_type != "满花局花绣花":
+        raise ValueError(f"Invalid process_type: {process_type}")
+
+    # Exclude specified departments
+    if process_type in exclusion_map:
+        filtered_departments = {k: v for k, v in all_departments.items() if k not in exclusion_map[process_type]}
+        # Remove corresponding steps from "产前确认"
         if "产前确认" in filtered_departments:
-            filtered_departments["产前确认"] = [step for step in filtered_departments["产前确认"] if step != "绣花样品"]
+            remove_steps = {"满花": "满花样品", "局花": "局花样品", "绣花": "绣花样品"}
+            filtered_departments["产前确认"] = [step for step in filtered_departments["产前确认"]
+                                                if step not in [remove_steps.get(p) for p in exclusion_map[process_type] if p in remove_steps]]
         return filtered_departments
-    elif process_type == "满花绣花":
-        # Exclude 局花 department
-        filtered_departments =  {k: v for k, v in all_departments.items() if k != "局花"}
-        if "产前确认" in filtered_departments:
-            filtered_departments["产前确认"] = [step for step in filtered_departments["产前确认"] if step != "局花样品"]
-        return filtered_departments
-    elif process_type == "局花绣花":
-        # Exclude 满花 department
-        filtered_departments =   {k: v for k, v in all_departments.items() if k != "满花"}
-        if "产前确认" in filtered_departments:
-            filtered_departments["产前确认"] = [step for step in filtered_departments["产前确认"] if step != "满花样品"]
-        return filtered_departments
-    elif process_type == "满花":
-        # Exclude 局花 and 绣花 departments
-        filtered_departments = {k: v for k, v in all_departments.items() if k != "局花" and k != "绣花"}
-        if "产前确认" in filtered_departments:
-            filtered_departments["产前确认"] = [step for step in filtered_departments["产前确认"] 
-                                        if step != "局花样品" and step != "绣花样品"]
-        return filtered_departments
-    elif process_type == "局花":
-        # Exclude 满花 and 绣花 departments
-        filtered_departments = {k: v for k, v in all_departments.items() if k != "满花" and k != "绣花"}
-        if "产前确认" in filtered_departments:
-            filtered_departments["产前确认"] = [step for step in filtered_departments["产前确认"] 
-                                        if step != "满花样品" and step != "绣花样品"]
-        return filtered_departments
-    elif process_type == "绣花":
-        # Exclude 满花 and 局花 departments
-        filtered_departments = {k: v for k, v in all_departments.items() if k != "满花" and k != "局花"}
-        if "产前确认" in filtered_departments:
-            filtered_departments["产前确认"] = [step for step in filtered_departments["产前确认"] 
-                                        if step != "满花样品" and step != "局花样品"]
-        return filtered_departments
-    else:  # "满花局花绣花"
-        return all_departments
+
+    # If "满花局花绣花", return all departments
+    return all_departments
 
 def calculate_schedule(sewing_start_date, process_type, confirmation_period, order_quantity, daily_production, start_time_period="上午"):
     """ 计算整个生产流程的时间安排 """
