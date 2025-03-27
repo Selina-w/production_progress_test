@@ -1964,49 +1964,85 @@ def display_schedule_steps(schedule):
             styled_df = df.style.apply(highlight_full_flower_sample, axis=1)
             st.dataframe(styled_df)
 
-# 在图表生成部分添加部门和步骤的显示
-
-def display_schedule_steps(schedule):
-    """在Streamlit界面中显示计算出的各部门步骤"""
-    st.markdown("### 📋 计算出的部门和步骤")
-    
-    # 创建一个展开/折叠的部分
-    with st.expander("点击查看所有部门和步骤", expanded=False):
-        # 对部门进行排序，方便查看
-        sorted_departments = sorted(schedule.keys())
+def create_style_dict():
+    """从表单字段创建样式数据字典"""
+    try:
+        # 获取表单中的各个字段
+        style_number = st.session_state.get("style_number", "未知款号")
+        sewing_start_date = st.session_state.get("sewing_start_date", datetime.today().date())
+        process_type = st.session_state.get("selected_process", "标准流程")
+        cycle = st.session_state.get("cycle", 7)
+        order_quantity = st.session_state.get("order_quantity", 100)
+        daily_production = st.session_state.get("daily_production", 50)
+        production_group = st.session_state.get("production_group", "")
+        production_order = st.session_state.get("production_order", 1)
+        start_time_period = st.session_state.get("start_time_period", "上午")
         
-        for dept in sorted_departments:
-            st.markdown(f"#### 📌 {dept}")
-            
-            # 获取部门的所有步骤
-            steps = schedule[dept]
-            if not steps:
-                st.write("(无步骤)")
-                continue
-            
-            # 创建步骤表格
-            step_data = []
-            for step, details in steps.items():
-                date = details["时间点"].strftime("%Y/%m/%d")
-                
-                # 检查是否有备注信息
-                remark = details.get("备注", "")
-                
-                # 将步骤信息添加到数据列表
-                step_data.append({"步骤": step, "日期": date, "备注": remark})
-            
-            # 创建DataFrame并显示为表格
-            df = pd.DataFrame(step_data)
-            
-            # 根据步骤名称设置样式 - 特别是满花样品
-            def highlight_full_flower_sample(row):
-                if row["步骤"] == "满花样品":
-                    return ["background-color: #ffcccb; font-weight: bold; color: red"] * len(row)
-                return [""] * len(row)
-            
-            # 应用样式并显示
-            styled_df = df.style.apply(highlight_full_flower_sample, axis=1)
-            st.dataframe(styled_df)
+        # 创建并返回样式字典
+        return {
+            "style_number": style_number,
+            "sewing_start_date": sewing_start_date,
+            "process_type": process_type,
+            "cycle": cycle,
+            "order_quantity": order_quantity,
+            "daily_production": daily_production,
+            "production_group": production_group,
+            "production_order": production_order,
+            "start_time_period": start_time_period
+        }
+    except Exception as e:
+        st.error(f"创建样式数据时出错: {str(e)}")
+        # 返回默认值以避免进一步的错误
+        return {
+            "style_number": "未知款号",
+            "sewing_start_date": datetime.today().date(),
+            "process_type": "标准流程",
+            "cycle": 7,
+            "order_quantity": 100,
+            "daily_production": 50,
+            "production_group": "",
+            "production_order": 1,
+            "start_time_period": "上午"
+        }
+
+def show_continuous_scheduling_explanation():
+    """显示连续排程的说明"""
+    st.markdown("""
+    ### 生产组连续排产逻辑
+    
+    系统按以下规则处理同一生产组内的款式排产:
+    
+    1. **同一生产顺序的款式**:
+       - 共享相同的缝纫开始日期和时段（上午/下午）
+       - 生产顺序为1的款式使用原始设定的开始日期
+       - 各自按其工序、订单数量和日产量计算结束时间
+    
+    2. **连续排产规则**:
+       - 系统会找出当前生产顺序组中结束时间最晚的款式
+       - 该款式的缝纫结束时间（及上午/下午时段）将作为下一个生产顺序组的开始时间
+       - 依此类推，形成连续排产
+       
+    3. **实际应用**:
+       - 生产顺序为1的款式可以手动指定开始日期
+       - 生产顺序为2、3...的款式会自动根据前一组的结束时间进行排产
+       - 相同生产顺序的款式将在同一天同一时段开始，可能在不同时间结束
+    """)
+
+def find_group_styles(group_id):
+    """查找同一生产组的其他款式"""
+    if not group_id or "all_styles" not in st.session_state:
+        return []
+    
+    # 查找所有具有相同生产组ID但不是当前款式的款式
+    group_styles = []
+    current_style_number = st.session_state.get("style_number", "")
+    
+    for style in st.session_state["all_styles"]:
+        if (style.get("production_group", "") == group_id and 
+            style.get("style_number", "") != current_style_number):
+            group_styles.append(style)
+    
+    return group_styles
 
 # 在预览按钮点击事件中调用此函数
 if st.button("预览"):
@@ -2014,6 +2050,8 @@ if st.button("预览"):
     style_number = st.session_state.get("style_number", "未知款号")  # 使用get方法提供默认值
     show_sewing_start = st.session_state.get("show_sewing_start", True)  # 使用get方法提供默认值
     period_str = st.session_state.get("period", None)
+    # 检查是否启用连续排产
+    show_continuous_scheduling = st.session_state.get("enable_sequential_production", True)
     
     # 获取当前表格中的数据
     style_data = create_style_dict()
