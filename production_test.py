@@ -1002,7 +1002,18 @@ def generate_department_wise_plots(styles):
         dept_data = df[df["department"] == department].copy()
         
         # Sort by date (latest first) and then by style number
-        dept_data.sort_values(by=["date", "style_number"], ascending=[False, True], inplace=True)
+       # 1. 计算每个款式的最早步骤时间
+        earliest_dates = dept_data.groupby("style_number")["date"].min().reset_index()
+        earliest_dates.rename(columns={"date": "earliest_date"}, inplace=True)
+        
+        # 2. 将最早日期合并回原始数据
+        dept_data = pd.merge(dept_data, earliest_dates, on="style_number", how="left")
+        
+        # 3. 按最早日期排序（升序，最早的在前），然后按款式号排序
+        dept_data.sort_values(by=["earliest_date", "style_number"], ascending=[False, False], inplace=True)
+        
+        # 4. 获取排序后的唯一款式号列表（保持顺序）
+        unique_sorted_styles = dept_data["style_number"].unique()
         
         # Calculate time range for dynamic sizing
         date_range = (dept_data["date"].max() - dept_data["date"].min()).days
@@ -1013,13 +1024,12 @@ def generate_department_wise_plots(styles):
             plt.rcParams['savefig.dpi'] = int(300 * dpi_scale)
         
         # Create figure with dynamic sizing
-        fig, ax = plt.subplots(figsize=(max(base_width, 25), len(dept_data["style_number"].unique()) * 3))
+        fig, ax = plt.subplots(figsize=(max(base_width, 25), len(unique_sorted_styles) * 3))
         fig.patch.set_facecolor('white')
         ax.set_facecolor('white')
         
-        # Calculate y positions for each style number
-        unique_styles = dept_data["style_number"].unique()
-        y_positions = {style: idx * 1.5 for idx, style in enumerate(unique_styles)}
+        # Calculate y positions for each style number - use the sorted styles
+        y_positions = {style: idx * 1.5 for idx, style in enumerate(unique_sorted_styles)}
         
         # Create colored background for the department
         ax.fill_betweenx(
@@ -1030,7 +1040,7 @@ def generate_department_wise_plots(styles):
         )
         
         # Plot timeline for each style number
-        for style in unique_styles:
+        for style in unique_sorted_styles:
             style_data = dept_data[dept_data["style_number"] == style]
             y = y_positions[style]
             
@@ -1239,19 +1249,28 @@ def generate_department_wise_plots(styles):
             # If we don't have enough data, skip
             if len(group_data) == 0 or len(group_data["style_number"].unique()) == 0:
                 continue
-                
+
+            # 为生产组图表也应用相似的排序逻辑
+            # 1. 计算每个款式的最早步骤时间
+            earliest_dates = group_data.groupby("style_number")["date"].min().reset_index()
+            earliest_dates.rename(columns={"date": "earliest_date"}, inplace=True)
+            
+            # 2. 将最早日期合并回原始数据
+            group_data = pd.merge(group_data, earliest_dates, on="style_number", how="left")
+            
+            # 3. 按最早日期排序（升序，最早的在前），然后按款式号排序
+            group_data.sort_values(by=["earliest_date", "style_number"], ascending=[True, True], inplace=True)
+            
+            # 4. 获取排序后的唯一款式号列表（保持顺序）
+            unique_sorted_styles = group_data["style_number"].unique()
+            
             # Create figure
             base_width = max(20, int((group_data["date"].max() - group_data["date"].min()).days / 41 * 40))
-            fig, ax = plt.subplots(figsize=(base_width, len(group_data["style_number"].unique()) * 3))
+            fig, ax = plt.subplots(figsize=(base_width, len(unique_sorted_styles) * 3))
             fig.patch.set_facecolor('white')
             ax.set_facecolor('white')
             
-            # Implement the actual plotting code similar to the original department plot
-            # Calculate positions for unique styles (y-axis) - REVERSED ORDER
-            unique_styles = group_data["style_number"].unique()
-            # Reverse the order of styles for display
-            unique_styles = unique_styles[::-1]
-            y_positions = {style: i for i, style in enumerate(unique_styles)}
+            y_positions = {style: i for i, style in enumerate(unique_sorted_styles)}
             
             # Plot timeline for each style
             for style, y in y_positions.items():
