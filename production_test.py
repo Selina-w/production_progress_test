@@ -1964,11 +1964,55 @@ def display_schedule_steps(schedule):
             styled_df = df.style.apply(highlight_full_flower_sample, axis=1)
             st.dataframe(styled_df)
 
+# 在图表生成部分添加部门和步骤的显示
+
+def display_schedule_steps(schedule):
+    """在Streamlit界面中显示计算出的各部门步骤"""
+    st.markdown("### 📋 计算出的部门和步骤")
+    
+    # 创建一个展开/折叠的部分
+    with st.expander("点击查看所有部门和步骤", expanded=False):
+        # 对部门进行排序，方便查看
+        sorted_departments = sorted(schedule.keys())
+        
+        for dept in sorted_departments:
+            st.markdown(f"#### 📌 {dept}")
+            
+            # 获取部门的所有步骤
+            steps = schedule[dept]
+            if not steps:
+                st.write("(无步骤)")
+                continue
+            
+            # 创建步骤表格
+            step_data = []
+            for step, details in steps.items():
+                date = details["时间点"].strftime("%Y/%m/%d")
+                
+                # 检查是否有备注信息
+                remark = details.get("备注", "")
+                
+                # 将步骤信息添加到数据列表
+                step_data.append({"步骤": step, "日期": date, "备注": remark})
+            
+            # 创建DataFrame并显示为表格
+            df = pd.DataFrame(step_data)
+            
+            # 根据步骤名称设置样式 - 特别是满花样品
+            def highlight_full_flower_sample(row):
+                if row["步骤"] == "满花样品":
+                    return ["background-color: #ffcccb; font-weight: bold; color: red"] * len(row)
+                return [""] * len(row)
+            
+            # 应用样式并显示
+            styled_df = df.style.apply(highlight_full_flower_sample, axis=1)
+            st.dataframe(styled_df)
+
 # 在预览按钮点击事件中调用此函数
 if st.button("预览"):
     st.session_state["preview_clicked"] = True
-    style_number = st.session_state["style_number"]
-    show_sewing_start = st.session_state["sewing_start_date"]
+    style_number = st.session_state.get("style_number", "未知款号")  # 使用get方法提供默认值
+    show_sewing_start = st.session_state.get("show_sewing_start", True)  # 使用get方法提供默认值
     period_str = st.session_state.get("period", None)
     
     # 获取当前表格中的数据
