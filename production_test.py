@@ -1920,207 +1920,53 @@ else:
                     mime="image/png"
                 )
 
-# 在图表生成部分添加部门和步骤的显示
-
-def display_schedule_steps(schedule):
-    """在Streamlit界面中显示计算出的各部门步骤"""
-    st.markdown("### 📋 计算出的部门和步骤")
-    
-    # 创建一个展开/折叠的部分
-    with st.expander("点击查看所有部门和步骤", expanded=False):
-        # 对部门进行排序，方便查看
-        sorted_departments = sorted(schedule.keys())
-        
-        for dept in sorted_departments:
-            st.markdown(f"#### 📌 {dept}")
+# 添加一个专门用于调试的部分
+    st.subheader("🔍 调试日程计算")
+    if st.button("计算并显示所有订单日程(调试用)"):
+        if "all_styles" in st.session_state and st.session_state["all_styles"]:
+            st.write("### 所有订单的计算日程")
             
-            # 获取部门的所有步骤
-            steps = schedule[dept]
-            if not steps:
-                st.write("(无步骤)")
-                continue
-            
-            # 创建步骤表格
-            step_data = []
-            for step, details in steps.items():
-                date = details["时间点"].strftime("%Y/%m/%d")
+            for idx, style in enumerate(st.session_state["all_styles"]):
+                st.write(f"#### 订单 {idx+1}: {style['style_number']}")
+                st.write(f"工序类型: {style['process_type']}, 确认周期: {style['cycle']}天")
+                st.write(f"缝纫开始日期: {style['sewing_start_date']} ({style.get('start_time_period', '上午')})")
                 
-                # 检查是否有备注信息
-                remark = details.get("备注", "")
-                
-                # 将步骤信息添加到数据列表
-                step_data.append({"步骤": step, "日期": date, "备注": remark})
-            
-            # 创建DataFrame并显示为表格
-            df = pd.DataFrame(step_data)
-            
-            # 根据步骤名称设置样式 - 特别是满花样品
-            def highlight_full_flower_sample(row):
-                if row["步骤"] == "满花样品":
-                    return ["background-color: #ffcccb; font-weight: bold; color: red"] * len(row)
-                return [""] * len(row)
-            
-            # 应用样式并显示
-            styled_df = df.style.apply(highlight_full_flower_sample, axis=1)
-            st.dataframe(styled_df)
-
-def create_style_dict():
-    """从表单字段创建样式数据字典"""
-    try:
-        # 获取表单中的各个字段
-        style_number = st.session_state.get("style_number", "未知款号")
-        sewing_start_date = st.session_state.get("sewing_start_date", datetime.today().date())
-        process_type = st.session_state.get("selected_process", "标准流程")
-        cycle = st.session_state.get("cycle", 7)
-        order_quantity = st.session_state.get("order_quantity", 100)
-        daily_production = st.session_state.get("daily_production", 50)
-        production_group = st.session_state.get("production_group", "")
-        production_order = st.session_state.get("production_order", 1)
-        start_time_period = st.session_state.get("start_time_period", "上午")
-        
-        # 创建并返回样式字典
-        return {
-            "style_number": style_number,
-            "sewing_start_date": sewing_start_date,
-            "process_type": process_type,
-            "cycle": cycle,
-            "order_quantity": order_quantity,
-            "daily_production": daily_production,
-            "production_group": production_group,
-            "production_order": production_order,
-            "start_time_period": start_time_period
-        }
-    except Exception as e:
-        st.error(f"创建样式数据时出错: {str(e)}")
-        # 返回默认值以避免进一步的错误
-        return {
-            "style_number": "未知款号",
-            "sewing_start_date": datetime.today().date(),
-            "process_type": "标准流程",
-            "cycle": 7,
-            "order_quantity": 100,
-            "daily_production": 50,
-            "production_group": "",
-            "production_order": 1,
-            "start_time_period": "上午"
-        }
-
-def show_continuous_scheduling_explanation():
-    """显示连续排程的说明"""
-    st.markdown("""
-    ### 生产组连续排产逻辑
-    
-    系统按以下规则处理同一生产组内的款式排产:
-    
-    1. **同一生产顺序的款式**:
-       - 共享相同的缝纫开始日期和时段（上午/下午）
-       - 生产顺序为1的款式使用原始设定的开始日期
-       - 各自按其工序、订单数量和日产量计算结束时间
-    
-    2. **连续排产规则**:
-       - 系统会找出当前生产顺序组中结束时间最晚的款式
-       - 该款式的缝纫结束时间（及上午/下午时段）将作为下一个生产顺序组的开始时间
-       - 依此类推，形成连续排产
-       
-    3. **实际应用**:
-       - 生产顺序为1的款式可以手动指定开始日期
-       - 生产顺序为2、3...的款式会自动根据前一组的结束时间进行排产
-       - 相同生产顺序的款式将在同一天同一时段开始，可能在不同时间结束
-    """)
-
-def find_group_styles(group_id):
-    """查找同一生产组的其他款式"""
-    if not group_id or "all_styles" not in st.session_state:
-        return []
-    
-    # 查找所有具有相同生产组ID但不是当前款式的款式
-    group_styles = []
-    current_style_number = st.session_state.get("style_number", "")
-    
-    for style in st.session_state["all_styles"]:
-        if (style.get("production_group", "") == group_id and 
-            style.get("style_number", "") != current_style_number):
-            group_styles.append(style)
-    
-    return group_styles
-
-# 在预览按钮点击事件中调用此函数
-if st.button("预览"):
-    st.session_state["preview_clicked"] = True
-    style_number = st.session_state.get("style_number", "未知款号")  # 使用get方法提供默认值
-    show_sewing_start = st.session_state.get("show_sewing_start", True)  # 使用get方法提供默认值
-    period_str = st.session_state.get("period", None)
-    # 检查是否启用连续排产
-    show_continuous_scheduling = st.session_state.get("enable_sequential_production", True)
-    
-    # 获取当前表格中的数据
-    style_data = create_style_dict()
-    
-    # 显示计算出的schedule信息
-    if "preview_schedule" in st.session_state:
-        display_schedule_steps(st.session_state["preview_schedule"])
-    
-    # 显示图表
-    if show_continuous_scheduling and style_data["production_group"]:
-        # 显示连续排程的说明
-        show_continuous_scheduling_explanation()
-        
-        # 获取相同生产组的其他款式
-        group_styles = find_group_styles(style_data["production_group"])
-        
-        # 将当前款式添加到生产组款式列表
-        group_styles.append(style_data)
-        
-        # 按照生产顺序排序
-        group_styles = sorted(group_styles, key=lambda x: x.get("production_order", 999))
-        
-        # 重新安排所有款式的缝纫开始时间 
-        rearranged_styles = rearrange_styles_by_production_group(group_styles)
-        
-        # 为每个款式计算schedule
-        for idx, style in enumerate(rearranged_styles):
-            sewing_start_time = datetime.combine(style["sewing_start_date"], datetime.min.time())
-            start_time_period = style.get("start_time_period", "上午") 
-            schedule = calculate_schedule(
-                sewing_start_time, 
-                style["process_type"], 
-                style["cycle"], 
-                style["order_quantity"], 
-                style["daily_production"],
-                start_time_period
-            )
-            
-            # 保存第一个款式的schedule用于显示
-            if idx == 0:
-                st.session_state["preview_schedule"] = schedule
-            
-            # 检查是否有满花样品步骤
-            if "产前确认" in schedule and "满花样品" in schedule["产前确认"]:
-                st.success(f"✅ 款号 {style['style_number']} 的计划中包含满花样品步骤，日期为: {schedule['产前确认']['满花样品']['时间点'].strftime('%Y/%m/%d')}")
-            
-            # 生成图表
-            fig = plot_timeline(schedule, style["process_type"], style["cycle"])
-            st.pyplot(fig)
-    else:
-        # 计算预览
-        sewing_start_time = datetime.combine(style_data["sewing_start_date"], datetime.min.time())
-        start_time_period = style_data.get("start_time_period", "上午")
-        schedule = calculate_schedule(
-            sewing_start_time, 
-            style_data["process_type"], 
-            style_data["cycle"], 
-            style_data["order_quantity"], 
-            style_data["daily_production"],
-            start_time_period
-        )
-        
-        # 保存schedule用于显示
-        st.session_state["preview_schedule"] = schedule
-        
-        # 检查是否有满花样品步骤
-        if "产前确认" in schedule and "满花样品" in schedule["产前确认"]:
-            st.success(f"✅ 计划中包含满花样品步骤，日期为: {schedule['产前确认']['满花样品']['时间点'].strftime('%Y/%m/%d')}")
-        
-        # 生成图表
-        fig = plot_timeline(schedule, style_data["process_type"], style_data["cycle"])
-        st.pyplot(fig)
+                # 计算日程
+                try:
+                    sewing_start_time = datetime.combine(style["sewing_start_date"], datetime.min.time())
+                    schedule = calculate_schedule(
+                        sewing_start_time, 
+                        style["process_type"], 
+                        style["cycle"], 
+                        style.get("order_quantity", 100), 
+                        style.get("daily_production", 50),
+                        style.get("start_time_period", "上午")
+                    )
+                    
+                    # 按部门显示计算结果
+                    for dept, steps in schedule.items():
+                        with st.expander(f"部门: {dept}"):
+                            for step_name, step_data in steps.items():
+                                date_str = step_data["时间点"].strftime("%Y-%m-%d")
+                                remark = step_data.get("备注", "")
+                                if remark:
+                                    st.write(f"- {step_name}: {date_str} ({remark})")
+                                else:
+                                    st.write(f"- {step_name}: {date_str}")
+                    
+                    # 特别检查满花样品是否存在
+                    if "产前确认" in schedule and "满花样品" in schedule["产前确认"]:
+                        st.success(f"✅ 此订单包含满花样品步骤，日期为: {schedule['产前确认']['满花样品']['时间点'].strftime('%Y-%m-%d')}")
+                    else:
+                        if "满花" in style["process_type"]:
+                            st.warning(f"⚠️ 此订单工序包含'满花'但未生成满花样品步骤")
+                        else:
+                            st.info("ℹ️ 此订单工序不包含'满花'，所以没有满花样品步骤")
+                    
+                except Exception as e:
+                    st.error(f"计算订单 {style['style_number']} 的日程时出错: {str(e)}")
+                    st.write("错误详情:", str(e))
+                    import traceback
+                    st.code(traceback.format_exc())
+        else:
+            st.warning("没有可用的订单数据。请先添加一些款式。")
