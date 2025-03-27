@@ -191,8 +191,9 @@ def calculate_schedule(sewing_start_date, process_type, confirmation_period, ord
         schedule["产前确认"]["满花样品"] = {"时间点": X + timedelta(days=23)}
     if process_type == "满花局花绣花" or process_type == "满花局花":
         schedule["产前确认"]["局花样品"] = {"时间点": X + timedelta(days=24)}
-    elif "局花样品" in schedule["产前确认"]:
-        schedule["产前确认"]["局花样品"] = {"时间点": X + timedelta(days=23)}
+    else:
+        if "局花样品" in schedule["产前确认"]:
+            schedule["产前确认"]["局花样品"] = {"时间点": X + timedelta(days=23)}
     if process_type == "满花局花绣花":
         schedule["产前确认"]["绣花样品"] = {"时间点": X + timedelta(days=25)}
         schedule["产前确认"]["版型"] = {"时间点": X + timedelta(days=27)}
