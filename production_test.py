@@ -845,11 +845,11 @@ def plot_timeline(schedule, process_type, confirmation_period):
                 
                 # 2. 在"满花局花绣花"的情况下：将"菊花样品"放到时间线上方，并与时间线保持一个文本框的距离
                 if dept == "产前确认" and step == "局花样品" and process_type == "满花局花绣花":
-                    y_offset = 0.9  # 放在时间线上方，有更大的距离
+                    y_offset = 0.8  # 放在时间线上方，有更大的距离
                 
                 # 3. 除了"满花局花绣花"或"满花"的情况下：将"版型"步骤放到时间线下方，与时间线有一个文本框的距离
                 if dept == "产前确认" and step == "版型" and process_type != "满花局花绣花" and process_type != "满花":
-                    y_offset = -0.9  # 放在时间线下方，有更大的距离
+                    y_offset = -0.8  # 放在时间线下方，有更大的距离
                 
                 # 4. 在"满花"的情况下：将"代用样品发送"放到时间线上方
                 if dept == "产前确认" and step == "代用样品发送" and process_type == "满花":
