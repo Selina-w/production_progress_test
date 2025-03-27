@@ -1117,7 +1117,7 @@ def generate_department_wise_plots(styles):
                             if style_info["style_number"] == row["style_number"]:
                                 process_type = style_info.get("process_type", "")
                                 if process_type == "满花局花绣花":
-                                    y_offset = 0.8  # 放在时间线上方，有更大的距离
+                                    y_offset = 0.6  # 放在时间线上方，有更大的距离
                                 break
                     
                     # 3. 除了"满花局花绣花"或"满花"的情况下：将"版型"步骤放到时间线下方，与时间线有一个文本框的距离
@@ -1127,7 +1127,7 @@ def generate_department_wise_plots(styles):
                             if style_info["style_number"] == row["style_number"]:
                                 process_type = style_info.get("process_type", "")
                                 if process_type != "满花局花绣花" and process_type != "满花":
-                                    y_offset = -0.8  # 放在时间线下方，有更大的距离
+                                    y_offset = -0.6  # 放在时间线下方，有更大的距离
                                 break
                     
                     # 4. 在"满花"的情况下：将"代用样品发送"放到时间线上方
@@ -1137,7 +1137,7 @@ def generate_department_wise_plots(styles):
                             if style_info["style_number"] == row["style_number"]:
                                 process_type = style_info.get("process_type", "")
                                 if process_type == "满花":
-                                    y_offset = 0.3  # 放在时间线上方
+                                    y_offset = -0.6  # 放在时间线上方
                                 break
                                 
                     step_text = f"{row['step']}\n{row['date'].strftime('%Y/%m/%d')}"
