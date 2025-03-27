@@ -172,7 +172,7 @@ def calculate_schedule(sewing_start_date, process_type, confirmation_period, ord
             X = Y - timedelta(days=63)
     # 1. 计算产前确认阶段
     schedule["产前确认"]["代用面料裁剪"] = {"时间点": X + timedelta(days=20)}
-    if "满花样品" in schedule["产前确认"] and ("满花" in process_type):
+    if "满花" in process_type:
         schedule["产前确认"]["满花样品"] = {"时间点": X + timedelta(days=23)}
     if process_type == "满花局花绣花" or process_type == "满花局花":
         schedule["产前确认"]["局花样品"] = {"时间点": X + timedelta(days=24)}
