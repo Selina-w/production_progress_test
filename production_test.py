@@ -1099,7 +1099,7 @@ def generate_department_wise_plots(styles):
                                 process_type = style_info.get("process_type", "")
                                 if "满花" in process_type and process_type != "满花绣花":
                                     y_offset = 0.3  # 放在时间线上方
-                                break
+                                #break
                     
                     # 2. 在"满花局花绣花"的情况下：将"局花样品"放到时间线上方，并与时间线保持一个文本框的距离
                     if department == "产前确认" and row["step"] == "局花样品":
@@ -1109,7 +1109,7 @@ def generate_department_wise_plots(styles):
                                 process_type = style_info.get("process_type", "")
                                 if process_type == "满花局花绣花":
                                     y_offset = 0.6  # 放在时间线上方，有更大的距离
-                                break
+                                #break
                     
                     # 3. 除了"满花局花绣花"或"满花"的情况下：将"版型"步骤放到时间线下方，与时间线有一个文本框的距离
                     if department == "产前确认" and row["step"] == "版型":
@@ -1119,7 +1119,7 @@ def generate_department_wise_plots(styles):
                                 process_type = style_info.get("process_type", "")
                                 if process_type != "满花局花绣花" and process_type != "满花":
                                     y_offset = -0.6  # 放在时间线下方，有更大的距离
-                                break
+                                #break
                     
                     # 4. 在"满花"的情况下：将"代用样品发送"放到时间线下方
                     if department == "产前确认" and row["step"] == "代用样品发送":
@@ -1131,7 +1131,7 @@ def generate_department_wise_plots(styles):
                                     y_offset = -0.6  # 放在时间线下方
                                 elif process_type == "局花":
                                     y_offset = 0.3  # 放在时间线上方
-                                break
+                                #break
 
                                 
                     step_text = f"{row['step']}\n{row['date'].strftime('%Y/%m/%d')}"
