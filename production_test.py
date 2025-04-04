@@ -125,7 +125,7 @@ def calculate_schedule(sewing_start_date, process_type, confirmation_period, ord
     Y = sewing_start_date  # 订单缝纫开始日期
     if confirmation_period == 7:
         if process_type == "满花局花绣花":
-            X = Y - timedelta(days=55)
+            X = Y - timedelta(days=54)
         elif process_type == "满花局花":
             X = Y - timedelta(days=47)
         elif process_type == "满花绣花":
@@ -683,6 +683,12 @@ def generate_excel_report(styles):
     for i, col in enumerate(df.columns):
         column_width = max(len(str(col)), df[col].astype(str).map(len).max())
         worksheet.column_dimensions[chr(65 + i)].width = min(column_width + 2, 30)  # Excel列从A开始
+
+        
+    # 保存并关闭Excel文件
+    writer.close()
+    
+    return excel_path
         
 # 画时间线
 def plot_timeline(schedule, process_type, confirmation_period):
@@ -2065,8 +2071,3 @@ else:
                     file_name=f"{style_number}_{selected_process}.png",
                     mime="image/png"
                 )
-    
-    # 保存并关闭Excel文件
-    writer.close()
-    
-    return excel_path
