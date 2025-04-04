@@ -290,7 +290,7 @@ def calculate_schedule(sewing_start_date, process_type, confirmation_period, ord
         elif confirmation_period == 7:
             schedule["绣花"]["绣花工艺"] = {"时间点": schedule["裁剪"]["工艺样版"]["时间点"]}
             if process_type == "满花局花绣花":
-                schedule["绣花"]["绣花"] = {"时间点":X + timedelta(days=52)}
+                schedule["绣花"]["绣花"] = {"时间点":schedule["局花"]["物理检测"]["时间点"] + timedelta(days=5)}
             elif process_type == "满花绣花":
                 schedule["绣花"]["绣花"] = {"时间点":X + timedelta(days=47)}
             elif process_type == "局花绣花":
