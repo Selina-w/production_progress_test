@@ -311,12 +311,7 @@ def calculate_schedule(sewing_start_date, process_type, confirmation_period, ord
 
     # 6. 计算配片
     if "绣花" in schedule:
-        if process_type == "满花局花绣花":
-            schedule["配片"]["配片"] = {
-                "时间点": schedule["绣花"]["物理检测"]["时间点"] + timedelta(days=1)
-            }
-        else:
-            schedule["配片"]["配片"] = {
+        schedule["配片"]["配片"] = {
                 "时间点": schedule["绣花"]["物理检测"]["时间点"]
             }
     else:
