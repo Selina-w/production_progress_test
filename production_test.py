@@ -833,7 +833,7 @@ def plot_timeline(schedule, process_type, confirmation_period):
                     y_offset = -0.8  # 放在时间线下方，有更大的距离
                 
                 # 4. 在"满花"的情况下：将"代用样品发送"放到时间线上方
-                if dept == "产前确认" and step == "代用样品发送" and process_type == "满花":
+                if dept == "产前确认" and step == "代用样品发送" and (process_type == "满花" or process_type == "局花"):
                     y_offset = 0.3  # 放在时间线上方
                 
                 text = ax.text(text_x, y + y_offset, step_text, 
@@ -1130,7 +1130,7 @@ def generate_department_wise_plots(styles):
                                 if process_type == "满花":
                                     y_offset = -0.6  # 放在时间线下方
                                 elif process_type == "局花":
-                                    y_offset = 0.6  # 放在时间线上方
+                                    y_offset = 0.3  # 放在时间线上方
                                 #break
 
                                 
