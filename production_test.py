@@ -1121,14 +1121,24 @@ def generate_department_wise_plots(styles):
                                     y_offset = -0.6  # 放在时间线下方，有更大的距离
                                 break
                     
-                    # 4. 在"满花"的情况下：将"代用样品发送"放到时间线上方
+                    # 4. 在"满花"的情况下：将"代用样品发送"放到时间线下方
                     if department == "产前确认" and row["step"] == "代用样品发送":
                         # 查找样式信息以获取流程类型
                         for style_info in styles:
                             if style_info["style_number"] == row["style_number"]:
                                 process_type = style_info.get("process_type", "")
                                 if process_type == "满花":
-                                    y_offset = -0.6  # 放在时间线上方
+                                    y_offset = -0.6  # 放在时间线下方
+                                break
+
+                    # 5. 在"局花"的情况下：将"代用样品发送"放到时间线上方
+                    if department == "产前确认" and row["step"] == "代用样品发送":
+                        # 查找样式信息以获取流程类型
+                        for style_info in styles:
+                            if style_info["style_number"] == row["style_number"]:
+                                process_type = style_info.get("process_type", "")
+                                if process_type == "局花":
+                                    y_offset = 0.3  # 放在时间线上方
                                 break
                                 
                     step_text = f"{row['step']}\n{row['date'].strftime('%Y/%m/%d')}"
