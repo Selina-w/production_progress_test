@@ -1126,11 +1126,11 @@ def generate_department_wise_plots(styles):
                         # 查找样式信息以获取流程类型
                         for style_info in styles:
                             if style_info["style_number"] == row["style_number"]:
-                                process_type = style_info.get("process_type", "").strip()
+                                process_type = style_info.get("process_type", "")
                                 if process_type == "满花":
                                     y_offset = -0.6  # 放在时间线下方
                                 elif process_type == "局花":
-                                    y_offset = 0.3  # 放在时间线上方
+                                    y_offset = 0.6  # 放在时间线上方
                                 #break
 
                                 
