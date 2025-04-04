@@ -829,11 +829,11 @@ def plot_timeline(schedule, process_type, confirmation_period):
                     y_offset = 0.8  # 放在时间线上方，有更大的距离
                 
                 # 3. 除了"满花局花绣花"或"满花"的情况下：将"版型"步骤放到时间线下方，与时间线有一个文本框的距离
-                if dept == "产前确认" and step == "版型" and process_type != "满花局花绣花" and process_type != "满花":
+                if dept == "产前确认" and step == "版型" and process_type != "满花局花绣花" and process_type != "满花" and process_type != "绣花" and process_type != "局花绣花":
                     y_offset = -0.8  # 放在时间线下方，有更大的距离
                 
                 # 4. 在"满花"的情况下：将"代用样品发送"放到时间线上方
-                if dept == "产前确认" and step == "代用样品发送" and (process_type == "满花" or process_type == "局花"):
+                if dept == "产前确认" and step == "代用样品发送" and (process_type == "满花" or process_type == "局花" or process_type == "绣花"):
                     y_offset = 0.3  # 放在时间线上方
                 
                 text = ax.text(text_x, y + y_offset, step_text, 
@@ -1117,7 +1117,7 @@ def generate_department_wise_plots(styles):
                         for style_info in styles:
                             if style_info["style_number"] == row["style_number"]:
                                 process_type = style_info.get("process_type", "")
-                                if process_type != "满花局花绣花" and process_type != "满花":
+                                if process_type != "满花局花绣花" and process_type != "满花" and process_type != "局花绣花" and process_type != "绣花":
                                     y_offset = -0.6  # 放在时间线下方，有更大的距离
                                 #break
                     
@@ -1129,7 +1129,7 @@ def generate_department_wise_plots(styles):
                                 process_type = style_info.get("process_type", "")
                                 if process_type == "满花":
                                     y_offset = -0.6  # 放在时间线下方
-                                elif process_type == "局花":
+                                elif process_type == "局花" or process_type == "绣花":
                                     y_offset = 0.3  # 放在时间线上方
                                 #break
 
