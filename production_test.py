@@ -592,7 +592,98 @@ def rearrange_styles_by_production_group(styles):
             rearranged_styles.append(style)
     
     return rearranged_styles
+
+def generate_excel_report(styles):
+    """生成包含所有款式信息的Excel报表"""
+    # 创建一个临时目录
+    temp_dir = tempfile.mkdtemp()
     
+    # 准备数据列表，每个款式一行
+    rows = []
+    
+    # 获取所有可能的部门和步骤
+    all_departments = get_department_steps()
+    all_steps = {}
+    for dept, steps in all_departments.items():
+        for step in steps:
+            all_steps[f"{dept}_{step}"] = True
+    
+    # 处理每个款式
+    for style in styles:
+        # 基本信息
+        row = {
+            "款号": style["style_number"],
+            "工艺类型": style["process_type"],
+            "产前确认周期": style["cycle"],
+            "缝纫开始日期": style["sewing_start_date"].strftime("%Y/%m/%d") if hasattr(style["sewing_start_date"], "strftime") else style["sewing_start_date"],
+            "订单数量": style["order_quantity"],
+            "日产量": style["daily_production"],
+            "上午/下午": style.get("start_time_period", "上午"),
+            "生产组": style.get("production_group", ""),
+            "生产顺序": style.get("production_order", "")
+        }
+        
+        # 如果款式已经有计算好的schedule，使用它
+        if "schedule" in style:
+            schedule = style["schedule"]
+        else:
+            # 否则重新计算schedule
+            sewing_start_time = datetime.combine(style["sewing_start_date"], datetime.min.time()) if not isinstance(style["sewing_start_date"], datetime) else style["sewing_start_date"]
+            schedule = calculate_schedule(
+                sewing_start_time, 
+                style["process_type"], 
+                style["cycle"], 
+                style["order_quantity"], 
+                style["daily_production"],
+                style.get("start_time_period", "上午")
+            )
+        
+        # 添加每个部门和步骤的日期
+        for dept, steps in schedule.items():
+            for step, info in steps.items():
+                time_point = info["时间点"]
+                row[f"{dept}_{step}"] = time_point.strftime("%Y/%m/%d") if hasattr(time_point, "strftime") else time_point
+                
+                # 添加备注信息（如果有）
+                if "备注" in info:
+                    row[f"{dept}_{step}_备注"] = info["备注"]
+        
+        rows.append(row)
+    
+    # 创建DataFrame并转换为Excel
+    df = pd.DataFrame(rows)
+    
+    # 调整列顺序：先基本信息，然后按部门顺序排列各步骤
+    base_columns = ["款号", "工艺类型", "产前确认周期", "缝纫开始日期", "订单数量", "日产量", "上午/下午", "生产组", "生产顺序"]
+    dept_order = ["产前确认", "面料", "满花", "局花", "绣花", "裁剪", "辅料", "配片", "滚领", "缝纫", "后整", "工艺"]
+    
+    # 对其他列（部门_步骤）按部门顺序排序
+    other_columns = [col for col in df.columns if col not in base_columns]
+    sorted_other_columns = sorted(other_columns, key=lambda x: (
+        dept_order.index(x.split('_')[0]) if x.split('_')[0] in dept_order else 999,
+        x
+    ))
+    
+    # 最终列顺序
+    final_columns = base_columns + sorted_other_columns
+    df = df[final_columns]
+    
+    # 保存为Excel文件
+    excel_path = os.path.join(temp_dir, "生产计划报表.xlsx")
+    
+    # 创建Excel写入器，设置日期格式
+    writer = pd.ExcelWriter(excel_path, engine='openpyxl')
+    df.to_excel(writer, index=False, sheet_name='生产计划')
+    
+    # 获取工作簿和工作表
+    workbook = writer.book
+    worksheet = writer.sheets['生产计划']
+    
+    # 设置列宽
+    for i, col in enumerate(df.columns):
+        column_width = max(len(str(col)), df[col].astype(str).map(len).max())
+        worksheet.column_dimensions[chr(65 + i)].width = min(column_width + 2, 30)  # Excel列从A开始
+        
 # 画时间线
 def plot_timeline(schedule, process_type, confirmation_period):
     # 根据工序类型定义部门顺序和颜色
@@ -1974,97 +2065,6 @@ else:
                     file_name=f"{style_number}_{selected_process}.png",
                     mime="image/png"
                 )
-
-def generate_excel_report(styles):
-    """生成包含所有款式信息的Excel报表"""
-    # 创建一个临时目录
-    temp_dir = tempfile.mkdtemp()
-    
-    # 准备数据列表，每个款式一行
-    rows = []
-    
-    # 获取所有可能的部门和步骤
-    all_departments = get_department_steps()
-    all_steps = {}
-    for dept, steps in all_departments.items():
-        for step in steps:
-            all_steps[f"{dept}_{step}"] = True
-    
-    # 处理每个款式
-    for style in styles:
-        # 基本信息
-        row = {
-            "款号": style["style_number"],
-            "工艺类型": style["process_type"],
-            "产前确认周期": style["cycle"],
-            "缝纫开始日期": style["sewing_start_date"].strftime("%Y/%m/%d") if hasattr(style["sewing_start_date"], "strftime") else style["sewing_start_date"],
-            "订单数量": style["order_quantity"],
-            "日产量": style["daily_production"],
-            "上午/下午": style.get("start_time_period", "上午"),
-            "生产组": style.get("production_group", ""),
-            "生产顺序": style.get("production_order", "")
-        }
-        
-        # 如果款式已经有计算好的schedule，使用它
-        if "schedule" in style:
-            schedule = style["schedule"]
-        else:
-            # 否则重新计算schedule
-            sewing_start_time = datetime.combine(style["sewing_start_date"], datetime.min.time()) if not isinstance(style["sewing_start_date"], datetime) else style["sewing_start_date"]
-            schedule = calculate_schedule(
-                sewing_start_time, 
-                style["process_type"], 
-                style["cycle"], 
-                style["order_quantity"], 
-                style["daily_production"],
-                style.get("start_time_period", "上午")
-            )
-        
-        # 添加每个部门和步骤的日期
-        for dept, steps in schedule.items():
-            for step, info in steps.items():
-                time_point = info["时间点"]
-                row[f"{dept}_{step}"] = time_point.strftime("%Y/%m/%d") if hasattr(time_point, "strftime") else time_point
-                
-                # 添加备注信息（如果有）
-                if "备注" in info:
-                    row[f"{dept}_{step}_备注"] = info["备注"]
-        
-        rows.append(row)
-    
-    # 创建DataFrame并转换为Excel
-    df = pd.DataFrame(rows)
-    
-    # 调整列顺序：先基本信息，然后按部门顺序排列各步骤
-    base_columns = ["款号", "工艺类型", "产前确认周期", "缝纫开始日期", "订单数量", "日产量", "上午/下午", "生产组", "生产顺序"]
-    dept_order = ["产前确认", "面料", "满花", "局花", "绣花", "裁剪", "辅料", "配片", "滚领", "缝纫", "后整", "工艺"]
-    
-    # 对其他列（部门_步骤）按部门顺序排序
-    other_columns = [col for col in df.columns if col not in base_columns]
-    sorted_other_columns = sorted(other_columns, key=lambda x: (
-        dept_order.index(x.split('_')[0]) if x.split('_')[0] in dept_order else 999,
-        x
-    ))
-    
-    # 最终列顺序
-    final_columns = base_columns + sorted_other_columns
-    df = df[final_columns]
-    
-    # 保存为Excel文件
-    excel_path = os.path.join(temp_dir, "生产计划报表.xlsx")
-    
-    # 创建Excel写入器，设置日期格式
-    writer = pd.ExcelWriter(excel_path, engine='openpyxl')
-    df.to_excel(writer, index=False, sheet_name='生产计划')
-    
-    # 获取工作簿和工作表
-    workbook = writer.book
-    worksheet = writer.sheets['生产计划']
-    
-    # 设置列宽
-    for i, col in enumerate(df.columns):
-        column_width = max(len(str(col)), df[col].astype(str).map(len).max())
-        worksheet.column_dimensions[chr(65 + i)].width = min(column_width + 2, 30)  # Excel列从A开始
     
     # 保存并关闭Excel文件
     writer.close()
