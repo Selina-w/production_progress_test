@@ -125,7 +125,7 @@ def calculate_schedule(sewing_start_date, process_type, confirmation_period, ord
     Y = sewing_start_date  # 订单缝纫开始日期
     if confirmation_period == 7:
         if process_type == "满花局花绣花":
-            X = Y - timedelta(days=53)
+            X = Y - timedelta(days=55)
         elif process_type == "满花局花":
             X = Y - timedelta(days=47)
         elif process_type == "满花绣花":
@@ -254,43 +254,17 @@ def calculate_schedule(sewing_start_date, process_type, confirmation_period, ord
         schedule["满花"]["物理检测"] = {"时间点": schedule["满花"]["满花后整"]["时间点"] + timedelta(days=1)}
 
     # 5. 计算裁剪流程
-    if confirmation_period == 7:
-        if process_type == "满花局花绣花":
-            schedule["裁剪"]["工艺样版"] = {"时间点": X + timedelta(days=35)}
-        elif process_type == "满花局花" or process_type == "满花绣花" or process_type == "局花绣花":
-            schedule["裁剪"]["工艺样版"] = {"时间点": X + timedelta(days=34)}
-        else:
-            schedule["裁剪"]["工艺样版"] = {"时间点": X + timedelta(days=33)}
-    elif confirmation_period == 14:
-        if process_type == "满花局花绣花":
-            schedule["裁剪"]["工艺样版"] = {"时间点": X + timedelta(days=42)}
-        elif process_type == "满花局花" or process_type == "满花绣花" or process_type == "局花绣花":
-            schedule["裁剪"]["工艺样版"] = {"时间点": X + timedelta(days=41)}
-        else:
-            schedule["裁剪"]["工艺样版"] = {"时间点": X + timedelta(days=40)}
-    elif confirmation_period == 30:
-        if process_type == "满花局花绣花":
-            schedule["裁剪"]["工艺样版"] = {"时间点": X + timedelta(days=42)}
-        elif process_type == "满花局花" or process_type == "满花绣花" or process_type == "局花绣花":
-            schedule["裁剪"]["工艺样版"] = {"时间点": X + timedelta(days=41)}
-        else:
-            schedule["裁剪"]["工艺样版"] = {"时间点": X + timedelta(days=40)}
-
+    schedule["裁剪"]["工艺样版"] = {"时间点": schedule["产前确认"]["版型确认"]["时间点"]}
+    
     if process_type == "局花" or process_type == "绣花" or process_type == "局花绣花":
         schedule["裁剪"]["裁剪"] = {"时间点": schedule["裁剪"]["工艺样版"]["时间点"] + timedelta(days=3)}
     else:
-        if confirmation_period == 30:
-            schedule["裁剪"]["裁剪"] = {"时间点": schedule["裁剪"]["工艺样版"]["时间点"] + timedelta(days=18)}
-        else:
-            schedule["裁剪"]["裁剪"] = {"时间点": schedule["裁剪"]["工艺样版"]["时间点"] + timedelta(days=8)}
+        schedule["裁剪"]["裁剪"] = {"时间点": schedule["满花"]["物理检测"]["时间点"] + timedelta(days=3)}
 
 
     # 4. 计算局花流程
     if "局花" in schedule:
-        if confirmation_period == 30:
-            schedule["局花"]["局花工艺"] = {"时间点": schedule["裁剪"]["工艺样版"]["时间点"] + timedelta(days=10)}
-        else:
-            schedule["局花"]["局花工艺"] = {"时间点": schedule["裁剪"]["工艺样版"]["时间点"]}
+        schedule["局花"]["局花工艺"] = {"时间点": schedule["产前确认"]["印绣样品确认"]["时间点"]}
         if process_type == "满花局花绣花" or process_type == "满花局花":
             schedule["局花"]["局花"] = {"时间点": schedule["局花"]["局花工艺"]["时间点"] + timedelta(days=11)}
         else:
@@ -305,7 +279,7 @@ def calculate_schedule(sewing_start_date, process_type, confirmation_period, ord
         if confirmation_period == 30:
             schedule["绣花"]["绣花工艺"] = {"时间点": schedule["裁剪"]["工艺样版"]["时间点"] + timedelta(days=10)}
             if process_type == "满花局花绣花":
-                schedule["绣花"]["绣花"] = {"时间点":X + timedelta(days=75)}
+                schedule["绣花"]["绣花"] = {"时间点":schedule["局花"]["物理检测"]["时间点"] + timedelta(days=5)}
             elif process_type == "满花绣花":
                 schedule["绣花"]["绣花"] = {"时间点":X + timedelta(days=70)}
             elif process_type == "局花绣花":
@@ -316,7 +290,7 @@ def calculate_schedule(sewing_start_date, process_type, confirmation_period, ord
         elif confirmation_period == 7:
             schedule["绣花"]["绣花工艺"] = {"时间点": schedule["裁剪"]["工艺样版"]["时间点"]}
             if process_type == "满花局花绣花":
-                schedule["绣花"]["绣花"] = {"时间点":X + timedelta(days=51)}
+                schedule["绣花"]["绣花"] = {"时间点":X + timedelta(days=52)}
             elif process_type == "满花绣花":
                 schedule["绣花"]["绣花"] = {"时间点":X + timedelta(days=47)}
             elif process_type == "局花绣花":
@@ -337,7 +311,14 @@ def calculate_schedule(sewing_start_date, process_type, confirmation_period, ord
 
     # 6. 计算配片
     if "绣花" in schedule:
-        schedule["配片"]["配片"] = {"时间点": schedule["绣花"]["物理检测"]["时间点"]}
+        if process_type == "满花局花绣花":
+            schedule["配片"]["配片"] = {
+                "时间点": schedule["绣花"]["物理检测"]["时间点"] + timedelta(days=1)
+            }
+        else:
+            schedule["配片"]["配片"] = {
+                "时间点": schedule["绣花"]["物理检测"]["时间点"]
+            }
     else:
         if "局花" in schedule:
             schedule["配片"]["配片"] = {"时间点": schedule["局花"]["物理检测"]["时间点"]}
@@ -345,7 +326,7 @@ def calculate_schedule(sewing_start_date, process_type, confirmation_period, ord
             schedule["配片"]["配片"] = {"时间点": schedule["裁剪"]["裁剪"]["时间点"]}
 
     # 7. 计算滚领
-    schedule["滚领"]["滚领"] = {"时间点": schedule["配片"]["配片"]["时间点"]}
+    schedule["滚领"]["滚领布"] = {"时间点": schedule["配片"]["配片"]["时间点"]}
 
     # 8. 计算辅料流程（并行）--从这开始
     schedule["辅料"]["辅料限额"] = {"时间点":  X + timedelta(days=17)}
@@ -389,7 +370,7 @@ def calculate_schedule(sewing_start_date, process_type, confirmation_period, ord
             schedule["辅料"]["辅料"] = {"时间点":X + timedelta(days=47)}
             schedule["缝纫"]["缝纫工艺"] = {"时间点": X + timedelta(days=47)}
         elif process_type == "局花":
-            schedule["辅料"]["辅料"] = {"时间点":X + timedelta(days=45)}
+            schedule["辅料"]["辅料"] = {"时间点":X + timedelta(days=46)}
             schedule["缝纫"]["缝纫工艺"] = {"时间点": X + timedelta(days=46)}
         else:
             schedule["辅料"]["辅料"] = {"时间点":X + timedelta(days=48)}
