@@ -705,8 +705,16 @@ def generate_excel_report(styles):
         # 设置自动换行和边框
         for row in range(1, len(df) + 2):  # +2 because Excel is 1-based
             cell = worksheet[f"{col_letter}{row}"]
-            cell.alignment = openpyxl.styles.Alignment(wrap_text=True, vertical='top')
+            #cell.alignment = openpyxl.styles.Alignment(wrap_text=True, vertical='top')
             cell.border = thin_border
+
+            # 设置对齐方式
+            if row == 1:  # 表头行
+                cell.alignment = openpyxl.styles.Alignment(horizontal='center', vertical='center')
+            elif col == "款号":  # 款号列
+                cell.alignment = openpyxl.styles.Alignment(horizontal='left', vertical='top', wrap_text=True)
+            else:  # 日期列
+                cell.alignment = openpyxl.styles.Alignment(horizontal='center', vertical='top', wrap_text=True)
     
     # 冻结首行和款号列
     worksheet.freeze_panes = 'B2'
