@@ -676,13 +676,21 @@ def generate_excel_report(styles):
     
     # 创建Excel写入器
     writer = pd.ExcelWriter(excel_path, engine='openpyxl')
-    df.to_excel(writer, index=False, sheet_name='生产计划')
+    
+    # 创建一个空的DataFrame作为标题行
+    title_df = pd.DataFrame([["生产计划跟踪记录"] + [""] * (len(df.columns) - 1)], columns=df.columns)
+    
+    # 将标题行和原始数据合并
+    combined_df = pd.concat([title_df, df], ignore_index=True)
+    
+    # 写入Excel
+    combined_df.to_excel(writer, index=False, sheet_name='生产计划')
     
     # 获取工作簿和工作表
     workbook = writer.book
     worksheet = writer.sheets['生产计划']
-
-     # 定义边框样式
+    
+    # 定义边框样式
     thin_border = openpyxl.styles.Border(
         left=openpyxl.styles.Side(style='thin'),
         right=openpyxl.styles.Side(style='thin'),
@@ -690,20 +698,10 @@ def generate_excel_report(styles):
         bottom=openpyxl.styles.Side(style='thin')
     )
     
-     # 添加标题行
+    # 设置标题行格式
     title_cell = worksheet['A1']
-    title_cell.value = "生产计划跟踪记录"
     title_cell.font = openpyxl.styles.Font(bold=True, size=14)
     title_cell.alignment = openpyxl.styles.Alignment(horizontal='left', vertical='center')
-    
-    # 将数据行向下移动一行
-    for row in range(len(df) + 1, 0, -1):
-        for col in range(1, len(df.columns) + 1):
-            cell = worksheet.cell(row=row, column=col)
-            target_cell = worksheet.cell(row=row + 1, column=col)
-            target_cell.value = cell.value
-            target_cell.border = cell.border
-            target_cell.alignment = cell.alignment
     
     # 设置列宽和自动换行
     for i, col in enumerate(df.columns):
@@ -718,7 +716,7 @@ def generate_excel_report(styles):
         worksheet.column_dimensions[col_letter].width = min(column_width + 2, 30)
         
         # 设置自动换行和边框
-        for row in range(1, len(df) + 3):  # +3 because Excel is 1-based and we added a title row
+        for row in range(1, len(combined_df) + 1):  # +1 because Excel is 1-based
             cell = worksheet[f"{col_letter}{row}"]
             cell.border = thin_border
             
@@ -726,15 +724,16 @@ def generate_excel_report(styles):
             if row == 2:  # 表头行 (now row 2 because of title)
                 cell.alignment = openpyxl.styles.Alignment(horizontal='center', vertical='center')
             elif row == 1:  # 标题行
-                continue  # Skip title row as it's already formatted
-            elif col == "款号":  # 款号列
-                cell.alignment = openpyxl.styles.Alignment(horizontal='left', vertical='top', wrap_text=True)
-            else:  # 日期列
-                cell.alignment = openpyxl.styles.Alignment(horizontal='center', vertical='top', wrap_text=True)
+                if col != "款号":  # 对于非款号列，清空内容
+                    cell.value = ""
+            else:  # 数据行
+                if col == "款号":  # 款号列
+                    cell.alignment = openpyxl.styles.Alignment(horizontal='left', vertical='top', wrap_text=True)
+                else:  # 日期列
+                    cell.alignment = openpyxl.styles.Alignment(horizontal='center', vertical='top', wrap_text=True)
     
     # 冻结首行和款号列
     worksheet.freeze_panes = 'B3'  # Changed from B2 to B3 to account for title row
-    
     
     # 保存并关闭Excel文件
     writer.close()
