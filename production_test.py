@@ -677,7 +677,7 @@ def generate_excel_report(styles):
     
     # 创建Excel写入器
     writer = pd.ExcelWriter(excel_path, engine='openpyxl')
-    df.to_excel(writer, index=False, sheet_name='生产计划', startrow=1)
+    df.to_excel(writer, index=False, sheet_name='生产计划')
     
     # 获取工作簿和工作表
     workbook = writer.book
