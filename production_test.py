@@ -787,7 +787,7 @@ def generate_excel_report(styles):
             elif col == "款号":  # 款号列
                 cell.alignment = openpyxl.styles.Alignment(horizontal='left', vertical='top', wrap_text=True)
             else:  # 日期列
-                cell.alignment = openpyxl.styles.Alignment(horizontal='center', vertical='top', wrap_text=True)
+                cell.alignment = openpyxl.styles.Alignment(horizontal='left', vertical='top', wrap_text=True)
                 
                 # # 为单元格内容添加颜色
                 # if row > 2 and cell.value:  # 跳过标题和表头行
