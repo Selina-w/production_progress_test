@@ -12,6 +12,7 @@ import zipfile
 import matplotlib as mpl
 import json
 import pathlib
+import openpyxl
 
 
 # Create data directory if it doesn't exist
@@ -1475,6 +1476,110 @@ def generate_department_wise_plots(styles):
     
     return zip_path
 
+def generate_excel_report(styles):
+    """生成包含所有款式信息的Excel报表，以日期为列，款号为行"""
+    # 创建一个临时目录
+    temp_dir = tempfile.mkdtemp()
+    
+    # 收集所有日期和步骤信息
+    all_dates = set()
+    style_steps = {}
+    
+    # 处理每个款式
+    for style in styles:
+        style_number = style["style_number"]
+        style_steps[style_number] = {}
+        
+        # 如果款式已经有计算好的schedule，使用它
+        if "schedule" in style:
+            schedule = style["schedule"]
+        else:
+            # 否则重新计算schedule
+            sewing_start_time = datetime.combine(style["sewing_start_date"], datetime.min.time()) if not isinstance(style["sewing_start_date"], datetime) else style["sewing_start_date"]
+            schedule = calculate_schedule(
+                sewing_start_time, 
+                style["process_type"], 
+                style["cycle"], 
+                style["order_quantity"], 
+                style["daily_production"],
+                style.get("start_time_period", "上午")
+            )
+        
+        # 收集每个步骤的日期和备注
+        for dept, steps in schedule.items():
+            for step, info in steps.items():
+                time_point = info["时间点"]
+                if hasattr(time_point, "date"):
+                    date = time_point.date()
+                else:
+                    date = time_point
+                
+                all_dates.add(date)
+                
+                # 对于缝纫步骤，添加生产组信息
+                if dept == "缝纫":
+                    step_info = f"{dept}-{step}"
+                    if style.get("production_group"):
+                        step_info += f" ({style['production_group']})"
+                else:
+                    step_info = f"{dept}-{step}"
+                
+                # 如果有备注，添加到步骤信息中
+                if "备注" in info:
+                    step_info += f" [{info['备注']}]"
+                
+                # 如果同一天有多个步骤，用换行符分隔
+                if date in style_steps[style_number]:
+                    style_steps[style_number][date] += f"\n{step_info}"
+                else:
+                    style_steps[style_number][date] = step_info
+    
+    # 将日期排序
+    all_dates = sorted(list(all_dates))
+    
+    # 创建DataFrame
+    data = []
+    for style_number in sorted(style_steps.keys()):
+        row = {"款号": style_number}
+        for date in all_dates:
+            row[date] = style_steps[style_number].get(date, "")
+        data.append(row)
+    
+    df = pd.DataFrame(data)
+    
+    # 保存为Excel文件
+    excel_path = os.path.join(temp_dir, "生产计划报表.xlsx")
+    
+    # 创建Excel写入器
+    writer = pd.ExcelWriter(excel_path, engine='openpyxl')
+    df.to_excel(writer, index=False, sheet_name='生产计划')
+    
+    # 获取工作簿和工作表
+    workbook = writer.book
+    worksheet = writer.sheets['生产计划']
+    
+    # 设置列宽和自动换行
+    for i, col in enumerate(df.columns):
+        # 设置列宽
+        if col == "款号":
+            column_width = max(len(str(col)), df[col].astype(str).map(len).max())
+        else:
+            column_width = 15  # 固定日期列的宽度
+        worksheet.column_dimensions[chr(65 + i)].width = min(column_width + 2, 30)
+        
+        # 设置自动换行
+        for cell in worksheet[chr(65 + i) + "2:" + chr(65 + i) + str(len(df) + 1)]:
+            for c in cell:
+                c.alignment = openpyxl.styles.Alignment(wrap_text=True, vertical='top')
+    
+    # 冻结首行和款号列
+    worksheet.freeze_panes = 'B2'
+    
+    # 保存并关闭Excel文件
+    writer.close()
+    
+    return excel_path
+    
 def adjust_schedule(schedule, department, delayed_step, new_end_time):
     if department not in schedule or delayed_step not in schedule[department]:
         return schedule
@@ -2016,6 +2121,26 @@ else:
                         file_name="部门时间线图.zip",
                         mime="application/zip"
                     )
+        # with col3:
+        #     if st.button("生成Excel报表"):
+        #         # 根据用户选择决定是否重新排序
+        #         if enable_sequential_production:
+        #             # 重新安排同一生产组内款式的缝纫开始时间
+        #             styles_to_process = rearrange_styles_by_production_group(st.session_state["all_styles"])
+        #         else:
+        #             styles_to_process = st.session_state["all_styles"]
+                
+        #         # 生成Excel报表
+        #         excel_path = generate_excel_report(styles_to_process)
+                
+        #         # 提供Excel文件下载
+        #         with open(excel_path, "rb") as f:
+        #             st.download_button(
+        #                 label="下载Excel报表",
+        #                 data=f,
+        #                 file_name="生产计划报表.xlsx",
+        #                 mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        #             )
         with col3:
             if st.button("生成Excel报表"):
                 # 根据用户选择决定是否重新排序
