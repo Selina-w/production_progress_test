@@ -681,6 +681,14 @@ def generate_excel_report(styles):
     # 获取工作簿和工作表
     workbook = writer.book
     worksheet = writer.sheets['生产计划']
+
+     # 定义边框样式
+    thin_border = openpyxl.styles.Border(
+        left=openpyxl.styles.Side(style='thin'),
+        right=openpyxl.styles.Side(style='thin'),
+        top=openpyxl.styles.Side(style='thin'),
+        bottom=openpyxl.styles.Side(style='thin')
+    )
     
     # 设置列宽和自动换行
     for i, col in enumerate(df.columns):
@@ -695,9 +703,19 @@ def generate_excel_report(styles):
         worksheet.column_dimensions[col_letter].width = min(column_width + 2, 30)
         
         # 设置自动换行
+        # 设置自动换行和边框
         for row in range(2, len(df) + 2):  # +2 because Excel is 1-based and we skip header
             cell = worksheet[f"{col_letter}{row}"]
             cell.alignment = openpyxl.styles.Alignment(wrap_text=True, vertical='top')
+            # 只为有内容的单元格添加边框
+            if cell.value:
+                cell.border = thin_border
+    
+    # 为表头添加边框
+    for i in range(len(df.columns)):
+        col_letter = openpyxl.utils.get_column_letter(i + 1)
+        cell = worksheet[f"{col_letter}1"]
+        cell.border = thin_border
     
     # 冻结首行和款号列
     worksheet.freeze_panes = 'B2'
