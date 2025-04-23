@@ -690,6 +690,21 @@ def generate_excel_report(styles):
         bottom=openpyxl.styles.Side(style='thin')
     )
     
+     # 添加标题行
+    title_cell = worksheet['A1']
+    title_cell.value = "生产计划跟踪记录"
+    title_cell.font = openpyxl.styles.Font(bold=True, size=14)
+    title_cell.alignment = openpyxl.styles.Alignment(horizontal='left', vertical='center')
+    
+    # 将数据行向下移动一行
+    for row in range(len(df) + 1, 0, -1):
+        for col in range(1, len(df.columns) + 1):
+            cell = worksheet.cell(row=row, column=col)
+            target_cell = worksheet.cell(row=row + 1, column=col)
+            target_cell.value = cell.value
+            target_cell.border = cell.border
+            target_cell.alignment = cell.alignment
+    
     # 设置列宽和自动换行
     for i, col in enumerate(df.columns):
         # 获取Excel列引用
@@ -703,21 +718,23 @@ def generate_excel_report(styles):
         worksheet.column_dimensions[col_letter].width = min(column_width + 2, 30)
         
         # 设置自动换行和边框
-        for row in range(1, len(df) + 2):  # +2 because Excel is 1-based
+        for row in range(1, len(df) + 3):  # +3 because Excel is 1-based and we added a title row
             cell = worksheet[f"{col_letter}{row}"]
-            #cell.alignment = openpyxl.styles.Alignment(wrap_text=True, vertical='top')
             cell.border = thin_border
-
+            
             # 设置对齐方式
-            if row == 1:  # 表头行
+            if row == 2:  # 表头行 (now row 2 because of title)
                 cell.alignment = openpyxl.styles.Alignment(horizontal='center', vertical='center')
+            elif row == 1:  # 标题行
+                continue  # Skip title row as it's already formatted
             elif col == "款号":  # 款号列
                 cell.alignment = openpyxl.styles.Alignment(horizontal='left', vertical='top', wrap_text=True)
             else:  # 日期列
                 cell.alignment = openpyxl.styles.Alignment(horizontal='center', vertical='top', wrap_text=True)
     
     # 冻结首行和款号列
-    worksheet.freeze_panes = 'B2'
+    worksheet.freeze_panes = 'B3'  # Changed from B2 to B3 to account for title row
+    
     
     # 保存并关闭Excel文件
     writer.close()
