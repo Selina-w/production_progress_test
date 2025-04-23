@@ -789,12 +789,13 @@ def generate_excel_report(styles):
             else:  # 日期列
                 cell.alignment = openpyxl.styles.Alignment(horizontal='left', vertical='top', wrap_text=True)
                 # 为单元格内容添加颜色
+                # 为单元格内容添加颜色
                 if row > 2 and cell.value:  # 跳过标题和表头行
                     # 分割多行内容
                     step_lines = cell.value.split('\n')
                     
-                    # 创建一个新的富文本对象
-                    rich_text = openpyxl.rich_text.RichText()
+                    # 创建一个新的单元格，用于存储带颜色的文本
+                    new_cell = worksheet[f"{col_letter}{row}"]
                     
                     # 处理每一行
                     for i, line in enumerate(step_lines):
@@ -805,21 +806,14 @@ def generate_excel_report(styles):
                         color_found = False
                         for step_key, color in step_colors.items():
                             if line.startswith(step_key):
-                                # 添加带颜色的文本
-                                rich_text.add(line, openpyxl.styles.Color(color))
+                                # 设置单元格背景色
+                                new_cell.fill = openpyxl.styles.PatternFill(start_color=color[1:], end_color=color[1:], fill_type='solid')
                                 color_found = True
                                 break
                         
-                        # 如果没有找到匹配的步骤，使用默认颜色
+                        # 如果没有找到匹配的步骤，使用默认颜色（白色背景）
                         if not color_found:
-                            rich_text.add(line)
-                        
-                        # 如果不是最后一行，添加换行符
-                        if i < len(step_lines) - 1:
-                            rich_text.add("\n")
-                    
-                    # 设置单元格的富文本
-                    cell.value = rich_text
+                            new_cell.fill = openpyxl.styles.PatternFill(start_color='FFFFFF', end_color='FFFFFF', fill_type='solid')
     
     # 冻结首行和款号列
     worksheet.freeze_panes = 'B3'  # Changed from B2 to B3 to account for title row
