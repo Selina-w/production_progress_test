@@ -806,14 +806,14 @@ def generate_excel_report(styles):
                         color_found = False
                         for step_key, color in step_colors.items():
                             if line.startswith(step_key):
-                                # 设置单元格背景色
-                                new_cell.fill = openpyxl.styles.PatternFill(start_color=color[1:], end_color=color[1:], fill_type='solid')
+                                # 设置文本颜色
+                                new_cell.font = openpyxl.styles.Font(color=color)
                                 color_found = True
                                 break
                         
-                        # 如果没有找到匹配的步骤，使用默认颜色（白色背景）
+                        # 如果没有找到匹配的步骤，使用默认颜色（黑色）
                         if not color_found:
-                            new_cell.fill = openpyxl.styles.PatternFill(start_color='FFFFFF', end_color='FFFFFF', fill_type='solid')
+                            new_cell.font = openpyxl.styles.Font(color="000000")
     
     # 冻结首行和款号列
     worksheet.freeze_panes = 'B3'  # Changed from B2 to B3 to account for title row
