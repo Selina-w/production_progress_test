@@ -703,7 +703,8 @@ def generate_excel_report(styles):
             cell = worksheet.cell(row=row, column=col)
             target_cell = worksheet.cell(row=row + 1, column=col)
             target_cell.value = cell.value
-            target_cell.border = cell.border
+            if cell.border:
+                target_cell.border = cell.border
             target_cell.alignment = cell.alignment
     
     # 设置列宽和自动换行
