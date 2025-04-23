@@ -690,6 +690,70 @@ def generate_excel_report(styles):
         top=openpyxl.styles.Side(style='thin'),
         bottom=openpyxl.styles.Side(style='thin')
     )
+
+     # 定义每个步骤的颜色
+    step_colors = {
+        # 产前确认部门
+        "产前确认-代用面料裁剪": "#FFE0A0",  # 浅黄色
+        "产前确认-满花样品": "#FFD580",      # 橙色
+        "产前确认-局花样品": "#FFC060",      # 深橙色
+        "产前确认-绣花样品": "#FFB040",      # 红橙色
+        "产前确认-版型": "#FFA020",          # 红色
+        "产前确认-代用样品发送": "#FF9020",  # 深红色
+        "产前确认-版型确认": "#FF8020",      # 暗红色
+        "产前确认-印绣样品确认": "#FF7020",  # 更暗红色
+        "产前确认-辅料样发送": "#FF6020",    # 最暗红色
+        "产前确认-辅料确认": "#FF5020",      # 深暗红色
+        "产前确认-色样发送": "#FF4020",      # 更暗红色
+        "产前确认-色样确认": "#FF3020",      # 最暗红色
+        
+        # 面料部门
+        "面料-仕样书": "#FFE0C0",            # 浅橙色
+        "面料-工艺分析": "#FFD0B0",          # 橙色
+        "面料-排版": "#FFC0A0",              # 深橙色
+        "面料-用料": "#FFB090",              # 红橙色
+        "面料-棉纱": "#FFA080",              # 红色
+        "面料-毛坯": "#FF9070",              # 深红色
+        "面料-光坯": "#FF8060",              # 暗红色
+        "面料-物理检测验布": "#FF7050",      # 更暗红色
+        
+        # 满花部门
+        "满花-满花工艺": "#C0E0FF",          # 浅蓝色
+        "满花-满花": "#A0D0FF",              # 蓝色
+        "满花-满花后整": "#80C0FF",          # 深蓝色
+        "满花-物理检测": "#60B0FF",          # 更深的蓝色
+        
+        # 裁剪部门
+        "裁剪-工艺样版": "#C0FFC0",          # 浅绿色
+        "裁剪-裁剪": "#A0FFA0",              # 绿色
+        
+        # 局花部门
+        "局花-局花工艺": "#FFC0E0",          # 浅粉色
+        "局花-局花": "#FFA0D0",              # 粉色
+        "局花-物理检测": "#FF80C0",          # 深粉色
+        
+        # 配片部门
+        "配片-配片": "#FFD0C0",              # 浅珊瑚色
+        
+        # 滚领部门
+        "滚领-滚领": "#C0FFD0",              # 浅薄荷色
+        
+        # 辅料部门
+        "辅料-辅料限额": "#E0FFC0",          # 浅黄绿色
+        "辅料-辅料": "#D0FFB0",              # 黄绿色
+        "辅料-物理检测": "#C0FFA0",          # 深黄绿色
+        
+        # 缝纫部门
+        "缝纫-缝纫工艺": "#FFC0C0",          # 浅红色
+        "缝纫-缝纫开始": "#FFA0A0",          # 红色
+        "缝纫-缝纫结束": "#FF8080",          # 深红色
+        
+        # 后整部门
+        "后整-后整": "#FFE0C0",              # 浅杏色
+        
+        # 工艺部门
+        "工艺-工艺": "#C0FFE0"               # 浅青色
+    }
     
     # 添加标题行
     title_cell = worksheet['A1']
@@ -724,6 +788,38 @@ def generate_excel_report(styles):
                 cell.alignment = openpyxl.styles.Alignment(horizontal='left', vertical='top', wrap_text=True)
             else:  # 日期列
                 cell.alignment = openpyxl.styles.Alignment(horizontal='left', vertical='top', wrap_text=True)
+                # 为单元格内容添加颜色
+                if row > 2 and cell.value:  # 跳过标题和表头行
+                    # 分割多行内容
+                    step_lines = cell.value.split('\n')
+                    
+                    # 创建一个新的富文本对象
+                    rich_text = openpyxl.rich_text.RichText()
+                    
+                    # 处理每一行
+                    for i, line in enumerate(step_lines):
+                        # 提取步骤名称（去除生产组信息和备注）
+                        step_name = line.split(' (')[0].split(' [')[0]
+                        
+                        # 查找匹配的步骤颜色
+                        color_found = False
+                        for step_key, color in step_colors.items():
+                            if line.startswith(step_key):
+                                # 添加带颜色的文本
+                                rich_text.add(line, openpyxl.styles.Color(color))
+                                color_found = True
+                                break
+                        
+                        # 如果没有找到匹配的步骤，使用默认颜色
+                        if not color_found:
+                            rich_text.add(line)
+                        
+                        # 如果不是最后一行，添加换行符
+                        if i < len(step_lines) - 1:
+                            rich_text.add("\n")
+                    
+                    # 设置单元格的富文本
+                    cell.value = rich_text
     
     # 冻结首行和款号列
     worksheet.freeze_panes = 'B3'  # Changed from B2 to B3 to account for title row
