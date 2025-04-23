@@ -698,23 +698,6 @@ def generate_excel_report(styles):
     title_cell.font = openpyxl.styles.Font(bold=True, size=24)
     title_cell.alignment = openpyxl.styles.Alignment(horizontal='left', vertical='center')
     
-    # # 将数据行向下移动一行
-    # for row in range(len(df) + 1, 0, -1):
-    #     for col in range(1, len(df.columns) + 1):
-    #         cell = worksheet.cell(row=row, column=col)
-    #         target_cell = worksheet.cell(row=row + 1, column=col)
-    #         target_cell.value = cell.value
-    #         if cell.has_style:
-    #             if isinstance(cell.font, Font):
-    #                 target_cell.font = cell.font
-    #             if isinstance(cell.border, Border):
-    #                 target_cell.border = cell.border
-    #             if isinstance(cell.alignment, Alignment):
-    #                 target_cell.alignment = cell.alignment
-    #             if isinstance(cell.fill, PatternFill):
-    #                 target_cell.fill = cell.fill
-    #             target_cell.number_format = cell.number_format
-    
     # 设置列宽和自动换行
     for i, col in enumerate(df.columns):
         # 获取Excel列引用
@@ -744,7 +727,33 @@ def generate_excel_report(styles):
     
     # 冻结首行和款号列
     worksheet.freeze_panes = 'B3'  # Changed from B2 to B3 to account for title row
+
+    # ⬇️ ADD COLORING CODE HERE
+    from openpyxl.styles import PatternFill
+    import hashlib
     
+    color_palette = [
+        "FFC7CE", "C6EFCE", "FFEB9C", "BDD7EE", "F8CBAD", "E2EFDA", "DDEBF7",
+        "F4CCCC", "D9EAD3", "FFF2CC", "D0E0E3", "FCE5CD", "D9D2E9", "EAD1DC"
+    ]
+    
+    step_color_map = {}
+    
+    def get_base_step_name(text):
+        return text.split(" [")[0].split(" (")[0].strip()
+    
+    for row in range(3, len(df) + 3):  # Data starts from row 3
+        for col_idx in range(2, len(df.columns) + 1):  # Skip "款号" column
+            cell = worksheet.cell(row=row, column=col_idx)
+            if cell.value:
+                base_step = get_base_step_name(cell.value.split("\n")[0])  # Take first line only
+                if base_step not in step_color_map:
+                    hash_index = int(hashlib.md5(base_step.encode()).hexdigest(), 16) % len(color_palette)
+                    step_color_map[base_step] = color_palette[hash_index]
+                cell.fill = PatternFill(start_color=step_color_map[base_step],
+                                        end_color=step_color_map[base_step],
+                                        fill_type="solid")
+        
     # 保存并关闭Excel文件
     writer.close()
     
