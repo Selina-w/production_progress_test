@@ -13,6 +13,7 @@ import matplotlib as mpl
 import json
 import pathlib
 import openpyxl
+from openpyxl.styles import Border
 
 
 # Create data directory if it doesn't exist
@@ -703,7 +704,7 @@ def generate_excel_report(styles):
             cell = worksheet.cell(row=row, column=col)
             target_cell = worksheet.cell(row=row + 1, column=col)
             target_cell.value = cell.value
-            if cell.border:
+            if isinstance(cell.border, Border):
                 target_cell.border = cell.border
             target_cell.alignment = cell.alignment
     
