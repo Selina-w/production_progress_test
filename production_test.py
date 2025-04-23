@@ -789,31 +789,31 @@ def generate_excel_report(styles):
             else:  # 日期列
                 cell.alignment = openpyxl.styles.Alignment(horizontal='center', vertical='top', wrap_text=True)
                 
-                # 为单元格内容添加颜色
-                if row > 2 and cell.value:  # 跳过标题和表头行
-                    # 分割多行内容
-                    step_lines = cell.value.split('\n')
+                # # 为单元格内容添加颜色
+                # if row > 2 and cell.value:  # 跳过标题和表头行
+                #     # 分割多行内容
+                #     step_lines = cell.value.split('\n')
                     
-                    # 创建一个新的单元格，用于存储带颜色的文本
-                    new_cell = worksheet[f"{col_letter}{row}"]
+                #     # 创建一个新的单元格，用于存储带颜色的文本
+                #     new_cell = worksheet[f"{col_letter}{row}"]
                     
-                    # 处理每一行
-                    for i, line in enumerate(step_lines):
-                        # 提取步骤名称（去除生产组信息和备注）
-                        step_name = line.split(' (')[0].split(' [')[0]
+                #     # 处理每一行
+                #     for i, line in enumerate(step_lines):
+                #         # 提取步骤名称（去除生产组信息和备注）
+                #         step_name = line.split(' (')[0].split(' [')[0]
                         
-                        # 查找匹配的步骤颜色
-                        color_found = False
-                        for step_key, color in step_colors.items():
-                            if line.startswith(step_key):
-                                # 设置文本颜色
-                                new_cell.font = openpyxl.styles.Font(color=color)
-                                color_found = True
-                                break
+                #         # 查找匹配的步骤颜色
+                #         color_found = False
+                #         for step_key, color in step_colors.items():
+                #             if line.startswith(step_key):
+                #                 # 设置文本颜色
+                #                 new_cell.font = openpyxl.styles.Font(color=color)
+                #                 color_found = True
+                #                 break
                         
-                        # 如果没有找到匹配的步骤，使用默认颜色（黑色）
-                        if not color_found:
-                            new_cell.font = openpyxl.styles.Font(color="FF000000")
+                #         # 如果没有找到匹配的步骤，使用默认颜色（黑色）
+                #         if not color_found:
+                #             new_cell.font = openpyxl.styles.Font(color="FF000000")
     
     # 冻结首行和款号列
     worksheet.freeze_panes = 'B2'  # Changed back to B2 to match original title method
