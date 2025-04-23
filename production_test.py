@@ -695,7 +695,7 @@ def generate_excel_report(styles):
     title_cell = worksheet['A1']
     title_cell.value = "生产计划跟踪记录"
     worksheet.merge_cells(start_row=1, start_column=1, end_row=1, end_column=len(df.columns))
-    title_cell.font = openpyxl.styles.Font(bold=True, size=14)
+    title_cell.font = openpyxl.styles.Font(bold=True, size=24)
     title_cell.alignment = openpyxl.styles.Alignment(horizontal='left', vertical='center')
     
     # # 将数据行向下移动一行
