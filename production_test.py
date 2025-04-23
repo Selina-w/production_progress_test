@@ -691,68 +691,68 @@ def generate_excel_report(styles):
         bottom=openpyxl.styles.Side(style='thin')
     )
 
-     # 定义每个步骤的颜色
+    # 定义每个步骤的颜色 (添加alpha通道为FF表示完全不透明)
     step_colors = {
         # 产前确认部门
-        "产前确认-代用面料裁剪": "#FFE0A0",  # 浅黄色
-        "产前确认-满花样品": "#FFD580",      # 橙色
-        "产前确认-局花样品": "#FFC060",      # 深橙色
-        "产前确认-绣花样品": "#FFB040",      # 红橙色
-        "产前确认-版型": "#FFA020",          # 红色
-        "产前确认-代用样品发送": "#FF9020",  # 深红色
-        "产前确认-版型确认": "#FF8020",      # 暗红色
-        "产前确认-印绣样品确认": "#FF7020",  # 更暗红色
-        "产前确认-辅料样发送": "#FF6020",    # 最暗红色
-        "产前确认-辅料确认": "#FF5020",      # 深暗红色
-        "产前确认-色样发送": "#FF4020",      # 更暗红色
-        "产前确认-色样确认": "#FF3020",      # 最暗红色
+        "产前确认-代用面料裁剪": "FFFFE0A0",  # 浅黄色
+        "产前确认-满花样品": "FFFFD580",      # 橙色
+        "产前确认-局花样品": "FFFFC060",      # 深橙色
+        "产前确认-绣花样品": "FFFFB040",      # 红橙色
+        "产前确认-版型": "FFFFA020",          # 红色
+        "产前确认-代用样品发送": "FFFF9020",  # 深红色
+        "产前确认-版型确认": "FFFF8020",      # 暗红色
+        "产前确认-印绣样品确认": "FFFF7020",  # 更暗红色
+        "产前确认-辅料样发送": "FFFF6020",    # 最暗红色
+        "产前确认-辅料确认": "FFFF5020",      # 深暗红色
+        "产前确认-色样发送": "FFFF4020",      # 更暗红色
+        "产前确认-色样确认": "FFFF3020",      # 最暗红色
         
         # 面料部门
-        "面料-仕样书": "#FFE0C0",            # 浅橙色
-        "面料-工艺分析": "#FFD0B0",          # 橙色
-        "面料-排版": "#FFC0A0",              # 深橙色
-        "面料-用料": "#FFB090",              # 红橙色
-        "面料-棉纱": "#FFA080",              # 红色
-        "面料-毛坯": "#FF9070",              # 深红色
-        "面料-光坯": "#FF8060",              # 暗红色
-        "面料-物理检测验布": "#FF7050",      # 更暗红色
+        "面料-仕样书": "FFFFE0C0",            # 浅橙色
+        "面料-工艺分析": "FFFFD0B0",          # 橙色
+        "面料-排版": "FFFFC0A0",              # 深橙色
+        "面料-用料": "FFFFB090",              # 红橙色
+        "面料-棉纱": "FFFFA080",              # 红色
+        "面料-毛坯": "FFFF9070",              # 深红色
+        "面料-光坯": "FFFF8060",              # 暗红色
+        "面料-物理检测验布": "FFFF7050",      # 更暗红色
         
         # 满花部门
-        "满花-满花工艺": "#C0E0FF",          # 浅蓝色
-        "满花-满花": "#A0D0FF",              # 蓝色
-        "满花-满花后整": "#80C0FF",          # 深蓝色
-        "满花-物理检测": "#60B0FF",          # 更深的蓝色
+        "满花-满花工艺": "FFC0E0FF",          # 浅蓝色
+        "满花-满花": "FFA0D0FF",              # 蓝色
+        "满花-满花后整": "FF80C0FF",          # 深蓝色
+        "满花-物理检测": "FF60B0FF",          # 更深的蓝色
         
         # 裁剪部门
-        "裁剪-工艺样版": "#C0FFC0",          # 浅绿色
-        "裁剪-裁剪": "#A0FFA0",              # 绿色
+        "裁剪-工艺样版": "FFC0FFC0",          # 浅绿色
+        "裁剪-裁剪": "FFA0FFA0",              # 绿色
         
         # 局花部门
-        "局花-局花工艺": "#FFC0E0",          # 浅粉色
-        "局花-局花": "#FFA0D0",              # 粉色
-        "局花-物理检测": "#FF80C0",          # 深粉色
+        "局花-局花工艺": "FFFFC0E0",          # 浅粉色
+        "局花-局花": "FFFFA0D0",              # 粉色
+        "局花-物理检测": "FFFF80C0",          # 深粉色
         
         # 配片部门
-        "配片-配片": "#FFD0C0",              # 浅珊瑚色
+        "配片-配片": "FFFFD0C0",              # 浅珊瑚色
         
         # 滚领部门
-        "滚领-滚领": "#C0FFD0",              # 浅薄荷色
+        "滚领-滚领": "FFC0FFD0",              # 浅薄荷色
         
         # 辅料部门
-        "辅料-辅料限额": "#E0FFC0",          # 浅黄绿色
-        "辅料-辅料": "#D0FFB0",              # 黄绿色
-        "辅料-物理检测": "#C0FFA0",          # 深黄绿色
+        "辅料-辅料限额": "FFE0FFC0",          # 浅黄绿色
+        "辅料-辅料": "FFD0FFB0",              # 黄绿色
+        "辅料-物理检测": "FFC0FFA0",          # 深黄绿色
         
         # 缝纫部门
-        "缝纫-缝纫工艺": "#FFC0C0",          # 浅红色
-        "缝纫-缝纫开始": "#FFA0A0",          # 红色
-        "缝纫-缝纫结束": "#FF8080",          # 深红色
+        "缝纫-缝纫工艺": "FFFFC0C0",          # 浅红色
+        "缝纫-缝纫开始": "FFFFA0A0",          # 红色
+        "缝纫-缝纫结束": "FFFF8080",          # 深红色
         
         # 后整部门
-        "后整-后整": "#FFE0C0",              # 浅杏色
+        "后整-后整": "FFFFE0C0",              # 浅杏色
         
         # 工艺部门
-        "工艺-工艺": "#C0FFE0"               # 浅青色
+        "工艺-工艺": "FFC1FFE1"               # 浅青色
     }
     
     # 添加标题行
@@ -787,8 +787,8 @@ def generate_excel_report(styles):
             elif col == "款号":  # 款号列
                 cell.alignment = openpyxl.styles.Alignment(horizontal='left', vertical='top', wrap_text=True)
             else:  # 日期列
-                cell.alignment = openpyxl.styles.Alignment(horizontal='left', vertical='top', wrap_text=True)
-                # 为单元格内容添加颜色
+                cell.alignment = openpyxl.styles.Alignment(horizontal='center', vertical='top', wrap_text=True)
+                
                 # 为单元格内容添加颜色
                 if row > 2 and cell.value:  # 跳过标题和表头行
                     # 分割多行内容
@@ -813,37 +813,11 @@ def generate_excel_report(styles):
                         
                         # 如果没有找到匹配的步骤，使用默认颜色（黑色）
                         if not color_found:
-                            new_cell.font = openpyxl.styles.Font(color="000000")
+                            new_cell.font = openpyxl.styles.Font(color="FF000000")
     
     # 冻结首行和款号列
-    worksheet.freeze_panes = 'B3'  # Changed from B2 to B3 to account for title row
-
-    # ⬇️ ADD COLORING CODE HERE
-    from openpyxl.styles import PatternFill
-    import hashlib
+    worksheet.freeze_panes = 'B2'  # Changed back to B2 to match original title method
     
-    color_palette = [
-        "FFC7CE", "C6EFCE", "FFEB9C", "BDD7EE", "F8CBAD", "E2EFDA", "DDEBF7",
-        "F4CCCC", "D9EAD3", "FFF2CC", "D0E0E3", "FCE5CD", "D9D2E9", "EAD1DC"
-    ]
-    
-    step_color_map = {}
-    
-    def get_base_step_name(text):
-        return text.split(" [")[0].split(" (")[0].strip()
-    
-    for row in range(3, len(df) + 3):  # Data starts from row 3
-        for col_idx in range(2, len(df.columns) + 1):  # Skip "款号" column
-            cell = worksheet.cell(row=row, column=col_idx)
-            if cell.value:
-                base_step = get_base_step_name(cell.value.split("\n")[0])  # Take first line only
-                if base_step not in step_color_map:
-                    hash_index = int(hashlib.md5(base_step.encode()).hexdigest(), 16) % len(color_palette)
-                    step_color_map[base_step] = color_palette[hash_index]
-                cell.fill = PatternFill(start_color=step_color_map[base_step],
-                                        end_color=step_color_map[base_step],
-                                        fill_type="solid")
-        
     # 保存并关闭Excel文件
     writer.close()
     
