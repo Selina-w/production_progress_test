@@ -13,7 +13,7 @@ import matplotlib as mpl
 import json
 import pathlib
 import openpyxl
-from openpyxl.styles import Border
+from openpyxl.styles import Font, Border, Alignment, PatternFill
 
 
 # Create data directory if it doesn't exist
@@ -704,9 +704,16 @@ def generate_excel_report(styles):
             cell = worksheet.cell(row=row, column=col)
             target_cell = worksheet.cell(row=row + 1, column=col)
             target_cell.value = cell.value
-            if isinstance(cell.border, Border):
-                target_cell.border = cell.border
-            target_cell.alignment = cell.alignment
+            if cell.has_style:
+                if isinstance(cell.font, Font):
+                    target_cell.font = cell.font
+                if isinstance(cell.border, Border):
+                    target_cell.border = cell.border
+                if isinstance(cell.alignment, Alignment):
+                    target_cell.alignment = cell.alignment
+                if isinstance(cell.fill, PatternFill):
+                    target_cell.fill = cell.fill
+                target_cell.number_format = cell.number_format
     
     # 设置列宽和自动换行
     for i, col in enumerate(df.columns):
