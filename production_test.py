@@ -118,7 +118,7 @@ def get_department_steps(process_type=None):
 
 def get_department_steps_longbing(process_type=None, confirmation_period = None):
     """Get department steps based on process type"""
-    if confirmation_period = 'SC':
+    if confirmation_period == 'SC':
         all_departments = {
             "毛坯": ["仕样书", "一次工艺分析", "一次排版", "一次用料", "棉纱", "毛坯"],
             "光坯": ["二次工艺分析", "二次排版", "二次用料", "光坯", "物理检测验布"],
@@ -757,7 +757,7 @@ def calculate_schedule_beibei_new(sewing_start_date, process_type, order_quantit
 
 def calculate_schedule(sewing_start_date, process_type, confirmation_period, order_quantity, daily_production, start_time_period="上午"):
     """ 计算整个生产流程的时间安排 """
-    if confirmation_period = '1个月交期+确认5天':
+    if confirmation_period == '1个月交期+确认5天':
         return calculate_schedule_beibei_new(sewing_start_date, process_type, order_quantity, daily_production, start_time_period="上午")
         
     schedule = {}
