@@ -2577,15 +2577,38 @@ else:
         col1, col2, col3 = st.columns(3)
         with col1:
             start_time_period = st.selectbox("缝纫开始时间:", ["上午", "下午"])
+        # with col2:
+        #     selected_company = st.selectbox("请选择公司:", ["贝贝", "龙兵"])
+        # with col3:
+        #     # Define process options based on company
+        #     process_options = {
+        #         "贝贝": ["满花局花绣花", "满花局花", "满花绣花", "局花绣花", "满花", "局花", "绣花"],
+        #         "龙兵": ["满花局花绣花", "满花局花", "满花绣花", "局花绣花", "满花", "局花", "绣花", "无印绣"]
+        #     }
+        #     selected_process = st.selectbox("请选择工序:", process_options[selected_company])
         with col2:
-            selected_company = st.selectbox("请选择公司:", ["贝贝", "龙兵"])
+            # Initialize session state for company if not exists
+            if 'selected_company' not in st.session_state:
+                st.session_state.selected_company = "贝贝"
+            
+            # Update company selection and trigger re-run
+            selected_company = st.selectbox(
+                "请选择公司:", 
+                ["贝贝", "龙兵"],
+                key="company_selector",
+                on_change=lambda: setattr(st.session_state, 'selected_company', st.session_state.company_selector)
+            )
         with col3:
             # Define process options based on company
             process_options = {
                 "贝贝": ["满花局花绣花", "满花局花", "满花绣花", "局花绣花", "满花", "局花", "绣花"],
                 "龙兵": ["满花局花绣花", "满花局花", "满花绣花", "局花绣花", "满花", "局花", "绣花", "无印绣"]
             }
-            selected_process = st.selectbox("请选择工序:", process_options[selected_company])
+            selected_process = st.selectbox(
+                "请选择工序:", 
+                process_options[st.session_state.selected_company],
+                key="process_selector"
+            )
         
         # 添加新字段
         order_quantity = st.number_input("订单数量:", min_value=1, value=100)
