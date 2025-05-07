@@ -14,6 +14,7 @@ import json
 import pathlib
 import openpyxl
 from openpyxl.styles import Font, Border, Alignment, PatternFill
+from io import BytesIO
 
 
 # Create data directory if it doesn't exist
