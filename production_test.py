@@ -2661,7 +2661,7 @@ else:
                 st.write(f"{idx + 1}. 款号: {style['style_number']}, 工序: {style['process_type']}, " 
                     f"缝纫开始日期: {style['sewing_start_date']} {time_period}, 周期: {style['cycle']}, "
                     f"订单数量: {style.get('order_quantity', '-')}, 日产量: {style.get('daily_production', '-')}, "
-                    f"生产组号: {style.get('production_group', '-')}, 生产顺序: {production_order}", f"公司: {style.get('company', '-')})
+                    f"生产组号: {style.get('production_group', '-')}, 生产顺序: {production_order}", f"公司: {style.get('company', '-')}")
             with col2:
                 if st.button("删除", key=f"delete_{idx}"):
                     st.session_state["all_styles"].pop(idx)
