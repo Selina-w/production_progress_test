@@ -1257,25 +1257,255 @@ def rearrange_styles_by_production_group(styles):
     
     return rearranged_styles
 
-def generate_excel_report(styles):
-    """生成包含所有款式信息的Excel报表，以日期为列，款号为行"""
-    # 创建一个临时目录
-    temp_dir = tempfile.mkdtemp()
+# def generate_excel_report(styles):
+#     """生成包含所有款式信息的Excel报表，以日期为列，款号为行"""
+#     # 创建一个临时目录
+#     temp_dir = tempfile.mkdtemp()
     
-    # 收集所有日期和步骤信息
-    all_dates = set()
-    style_steps = {}
+#     # 收集所有日期和步骤信息
+#     all_dates = set()
+#     style_steps = {}
     
-    # 处理每个款式
-    for style in styles:
-        style_number = style["style_number"]
-        style_steps[style_number] = {}
+#     # 处理每个款式
+#     for style in styles:
+#         style_number = style["style_number"]
+#         style_steps[style_number] = {}
         
-        # 如果款式已经有计算好的schedule，使用它
-        if "schedule" in style:
-            schedule = style["schedule"]
-        else:
-            # 否则重新计算schedule
+#         # 如果款式已经有计算好的schedule，使用它
+#         if "schedule" in style:
+#             schedule = style["schedule"]
+#         else:
+#             # 否则重新计算schedule
+#             sewing_start_time = datetime.combine(style["sewing_start_date"], datetime.min.time()) if not isinstance(style["sewing_start_date"], datetime) else style["sewing_start_date"]
+#             company = style["company"]
+#             if company == '贝贝':
+#                 schedule = calculate_schedule(
+#                     sewing_start_time, 
+#                     style["process_type"], 
+#                     style["cycle"], 
+#                     style["order_quantity"], 
+#                     style["daily_production"],
+#                     style.get("start_time_period", "上午")
+#                 )
+#             else:
+#                 schedule = calculate_schedule_longbing(
+#                     sewing_start_time, 
+#                     style["process_type"], 
+#                     style["cycle"], 
+#                     style["order_quantity"], 
+#                     style["daily_production"],
+#                     style.get("start_time_period", "上午"))
+        
+#         # 收集每个步骤的日期和备注
+#         for dept, steps in schedule.items():
+#             for step, info in steps.items():
+#                 time_point = info["时间点"]
+#                 if hasattr(time_point, "date"):
+#                     date = time_point.date()
+#                 else:
+#                     date = time_point
+                
+#                 all_dates.add(date)
+                
+#                 # 对于缝纫步骤，添加生产组信息
+#                 if dept == "缝纫":
+#                     step_info = f"{dept}-{step}"
+#                     if style.get("production_group"):
+#                         step_info += f" ({style['production_group']})"
+#                 else:
+#                     step_info = f"{dept}-{step}"
+                
+#                 # 如果有备注，添加到步骤信息中
+#                 if "备注" in info:
+#                     step_info += f" [{info['备注']}]"
+                
+#                 # 如果同一天有多个步骤，用换行符分隔
+#                 if date in style_steps[style_number]:
+#                     style_steps[style_number][date] += f"\n{step_info}"
+#                 else:
+#                     style_steps[style_number][date] = step_info
+    
+#     # 生成连续的日期序列
+#     min_date = min(all_dates)
+#     max_date = max(all_dates)
+#     all_dates = []
+#     current_date = min_date
+#     while current_date <= max_date:
+#         all_dates.append(current_date)
+#         current_date += timedelta(days=1)
+    
+#     # 创建DataFrame
+#     data = []
+#     for style_number in sorted(style_steps.keys()):
+#         row = {"款号": style_number}
+#         for date in all_dates:
+#             row[date] = style_steps[style_number].get(date, "")
+#         data.append(row)
+    
+#     df = pd.DataFrame(data)
+    
+#     # 保存为Excel文件
+#     excel_path = os.path.join(temp_dir, "生产计划报表.xlsx")
+    
+#     # 创建Excel写入器
+#     writer = pd.ExcelWriter(excel_path, engine='openpyxl')
+#     df.to_excel(writer, index=False, sheet_name='生产计划', startrow=1)
+    
+#     # 获取工作簿和工作表
+#     workbook = writer.book
+#     worksheet = writer.sheets['生产计划']
+    
+#     # 定义边框样式
+#     thin_border = openpyxl.styles.Border(
+#         left=openpyxl.styles.Side(style='thin'),
+#         right=openpyxl.styles.Side(style='thin'),
+#         top=openpyxl.styles.Side(style='thin'),
+#         bottom=openpyxl.styles.Side(style='thin')
+#     )
+
+#     # 定义每个步骤的颜色 (添加alpha通道为FF表示完全不透明)
+#     step_colors = {
+#         # 产前确认部门
+#         "产前确认-代用面料裁剪": "FFFFE0A0",  # 浅黄色
+#         "产前确认-满花样品": "FFFFD580",      # 橙色
+#         "产前确认-局花样品": "FFFFC060",      # 深橙色
+#         "产前确认-绣花样品": "FFFFB040",      # 红橙色
+#         "产前确认-版型": "FFFFA020",          # 红色
+#         "产前确认-代用样品发送": "FFFF9020",  # 深红色
+#         "产前确认-版型确认": "FFFF8020",      # 暗红色
+#         "产前确认-印绣样品确认": "FFFF7020",  # 更暗红色
+#         "产前确认-辅料样发送": "FFFF6020",    # 最暗红色
+#         "产前确认-辅料确认": "FFFF5020",      # 深暗红色
+#         "产前确认-色样发送": "FFFF4020",      # 更暗红色
+#         "产前确认-色样确认": "FFFF3020",      # 最暗红色
+        
+#         # 面料部门
+#         "面料-仕样书": "FFFFE0C0",            # 浅橙色
+#         "面料-工艺分析": "FFFFD0B0",          # 橙色
+#         "面料-排版": "FFFFC0A0",              # 深橙色
+#         "面料-用料": "FFFFB090",              # 红橙色
+#         "面料-棉纱": "FFFFA080",              # 红色
+#         "面料-毛坯": "FFFF9070",              # 深红色
+#         "面料-光坯": "FFFF8060",              # 暗红色
+#         "面料-物理检测验布": "FFFF7050",      # 更暗红色
+        
+#         # 满花部门
+#         "满花-满花工艺": "FFC0E0FF",          # 浅蓝色
+#         "满花-满花": "FFA0D0FF",              # 蓝色
+#         "满花-满花后整": "FF80C0FF",          # 深蓝色
+#         "满花-物理检测": "FF60B0FF",          # 更深的蓝色
+        
+#         # 裁剪部门
+#         "裁剪-工艺样版": "FFC0FFC0",          # 浅绿色
+#         "裁剪-裁剪": "FFA0FFA0",              # 绿色
+        
+#         # 局花部门
+#         "局花-局花工艺": "FFFFC0E0",          # 浅粉色
+#         "局花-局花": "FFFFA0D0",              # 粉色
+#         "局花-物理检测": "FFFF80C0",          # 深粉色
+        
+#         # 配片部门
+#         "配片-配片": "FFFFD0C0",              # 浅珊瑚色
+        
+#         # 滚领部门
+#         "滚领-滚领": "FFC0FFD0",              # 浅薄荷色
+        
+#         # 辅料部门
+#         "辅料-辅料限额": "FFE0FFC0",          # 浅黄绿色
+#         "辅料-辅料": "FFD0FFB0",              # 黄绿色
+#         "辅料-物理检测": "FFC0FFA0",          # 深黄绿色
+        
+#         # 缝纫部门
+#         "缝纫-缝纫工艺": "FFFFC0C0",          # 浅红色
+#         "缝纫-缝纫开始": "FFFFA0A0",          # 红色
+#         "缝纫-缝纫结束": "FFFF8080",          # 深红色
+        
+#         # 后整部门
+#         "后整-后整": "FFFFE0C0",              # 浅杏色
+        
+#         # 工艺部门
+#         "工艺-工艺": "FFC1FFE1"               # 浅青色
+#     }
+    
+#     # 添加标题行
+#     title_cell = worksheet['A1']
+#     title_cell.value = "生产计划跟踪记录"
+#     worksheet.merge_cells(start_row=1, start_column=1, end_row=1, end_column=len(df.columns))
+#     title_cell.font = openpyxl.styles.Font(bold=True, size=24)
+#     title_cell.alignment = openpyxl.styles.Alignment(horizontal='left', vertical='center')
+    
+#     # 设置列宽和自动换行
+#     for i, col in enumerate(df.columns):
+#         # 获取Excel列引用
+#         col_letter = openpyxl.utils.get_column_letter(i + 1)
+        
+#         # 设置列宽
+#         if col == "款号":
+#             column_width = max(len(str(col)), df[col].astype(str).map(len).max())
+#         else:
+#             column_width = 15  # 固定日期列的宽度
+#         worksheet.column_dimensions[col_letter].width = min(column_width + 2, 30)
+        
+#         # 设置自动换行和边框
+#         for row in range(1, len(df) + 3):  # +3 because Excel is 1-based and we added a title row
+#             cell = worksheet[f"{col_letter}{row}"]
+#             cell.border = thin_border
+            
+#             # 设置对齐方式
+#             if row == 2:  # 表头行 (now row 2 because of title)
+#                 cell.alignment = openpyxl.styles.Alignment(horizontal='center', vertical='center')
+#             elif row == 1:  # 标题行
+#                 continue  # Skip title row as it's already formatted
+#             elif col == "款号":  # 款号列
+#                 cell.alignment = openpyxl.styles.Alignment(horizontal='left', vertical='top', wrap_text=True)
+#             else:  # 日期列
+#                 cell.alignment = openpyxl.styles.Alignment(horizontal='left', vertical='top', wrap_text=True)
+                
+#                 # # 为单元格内容添加颜色
+#                 # if row > 2 and cell.value:  # 跳过标题和表头行
+#                 #     # 分割多行内容
+#                 #     step_lines = cell.value.split('\n')
+                    
+#                 #     # 创建一个新的单元格，用于存储带颜色的文本
+#                 #     new_cell = worksheet[f"{col_letter}{row}"]
+                    
+#                 #     # 处理每一行
+#                 #     for i, line in enumerate(step_lines):
+#                 #         # 提取步骤名称（去除生产组信息和备注）
+#                 #         step_name = line.split(' (')[0].split(' [')[0]
+                        
+#                 #         # 查找匹配的步骤颜色
+#                 #         color_found = False
+#                 #         for step_key, color in step_colors.items():
+#                 #             if line.startswith(step_key):
+#                 #                 # 设置文本颜色
+#                 #                 new_cell.font = openpyxl.styles.Font(color=color)
+#                 #                 color_found = True
+#                 #                 break
+                        
+#                 #         # 如果没有找到匹配的步骤，使用默认颜色（黑色）
+#                 #         if not color_found:
+#                 #             new_cell.font = openpyxl.styles.Font(color="FF000000")
+    
+#     # 冻结首行和款号列
+#     worksheet.freeze_panes = 'B2'  # Changed back to B2 to match original title method
+    
+#     # 保存并关闭Excel文件
+#     writer.close()
+    
+#     return excel_path
+
+def generate_excel_report(styles):
+    """Generate Excel report with all styles' schedules"""
+    # Create a new Excel writer
+    output = BytesIO()
+    with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+        # Create a list to store all rows
+        all_rows = []
+        
+        # Process each style
+        for style in styles:
+            # Get the schedule for this style
             sewing_start_time = datetime.combine(style["sewing_start_date"], datetime.min.time()) if not isinstance(style["sewing_start_date"], datetime) else style["sewing_start_date"]
             company = style["company"]
             if company == '贝贝':
@@ -1295,205 +1525,67 @@ def generate_excel_report(styles):
                     style["order_quantity"], 
                     style["daily_production"],
                     style.get("start_time_period", "上午"))
-        
-        # 收集每个步骤的日期和备注
-        for dept, steps in schedule.items():
-            for step, info in steps.items():
-                time_point = info["时间点"]
-                if hasattr(time_point, "date"):
-                    date = time_point.date()
-                else:
-                    date = time_point
-                
-                all_dates.add(date)
-                
-                # 对于缝纫步骤，添加生产组信息
-                if dept == "缝纫":
-                    step_info = f"{dept}-{step}"
-                    if style.get("production_group"):
-                        step_info += f" ({style['production_group']})"
-                else:
-                    step_info = f"{dept}-{step}"
-                
-                # 如果有备注，添加到步骤信息中
-                if "备注" in info:
-                    step_info += f" [{info['备注']}]"
-                
-                # 如果同一天有多个步骤，用换行符分隔
-                if date in style_steps[style_number]:
-                    style_steps[style_number][date] += f"\n{step_info}"
-                else:
-                    style_steps[style_number][date] = step_info
-    
-    # 生成连续的日期序列
-    min_date = min(all_dates)
-    max_date = max(all_dates)
-    all_dates = []
-    current_date = min_date
-    while current_date <= max_date:
-        all_dates.append(current_date)
-        current_date += timedelta(days=1)
-    
-    # 创建DataFrame
-    data = []
-    for style_number in sorted(style_steps.keys()):
-        row = {"款号": style_number}
-        for date in all_dates:
-            row[date] = style_steps[style_number].get(date, "")
-        data.append(row)
-    
-    df = pd.DataFrame(data)
-    
-    # 保存为Excel文件
-    excel_path = os.path.join(temp_dir, "生产计划报表.xlsx")
-    
-    # 创建Excel写入器
-    writer = pd.ExcelWriter(excel_path, engine='openpyxl')
-    df.to_excel(writer, index=False, sheet_name='生产计划', startrow=1)
-    
-    # 获取工作簿和工作表
-    workbook = writer.book
-    worksheet = writer.sheets['生产计划']
-    
-    # 定义边框样式
-    thin_border = openpyxl.styles.Border(
-        left=openpyxl.styles.Side(style='thin'),
-        right=openpyxl.styles.Side(style='thin'),
-        top=openpyxl.styles.Side(style='thin'),
-        bottom=openpyxl.styles.Side(style='thin')
-    )
-
-    # 定义每个步骤的颜色 (添加alpha通道为FF表示完全不透明)
-    step_colors = {
-        # 产前确认部门
-        "产前确认-代用面料裁剪": "FFFFE0A0",  # 浅黄色
-        "产前确认-满花样品": "FFFFD580",      # 橙色
-        "产前确认-局花样品": "FFFFC060",      # 深橙色
-        "产前确认-绣花样品": "FFFFB040",      # 红橙色
-        "产前确认-版型": "FFFFA020",          # 红色
-        "产前确认-代用样品发送": "FFFF9020",  # 深红色
-        "产前确认-版型确认": "FFFF8020",      # 暗红色
-        "产前确认-印绣样品确认": "FFFF7020",  # 更暗红色
-        "产前确认-辅料样发送": "FFFF6020",    # 最暗红色
-        "产前确认-辅料确认": "FFFF5020",      # 深暗红色
-        "产前确认-色样发送": "FFFF4020",      # 更暗红色
-        "产前确认-色样确认": "FFFF3020",      # 最暗红色
-        
-        # 面料部门
-        "面料-仕样书": "FFFFE0C0",            # 浅橙色
-        "面料-工艺分析": "FFFFD0B0",          # 橙色
-        "面料-排版": "FFFFC0A0",              # 深橙色
-        "面料-用料": "FFFFB090",              # 红橙色
-        "面料-棉纱": "FFFFA080",              # 红色
-        "面料-毛坯": "FFFF9070",              # 深红色
-        "面料-光坯": "FFFF8060",              # 暗红色
-        "面料-物理检测验布": "FFFF7050",      # 更暗红色
-        
-        # 满花部门
-        "满花-满花工艺": "FFC0E0FF",          # 浅蓝色
-        "满花-满花": "FFA0D0FF",              # 蓝色
-        "满花-满花后整": "FF80C0FF",          # 深蓝色
-        "满花-物理检测": "FF60B0FF",          # 更深的蓝色
-        
-        # 裁剪部门
-        "裁剪-工艺样版": "FFC0FFC0",          # 浅绿色
-        "裁剪-裁剪": "FFA0FFA0",              # 绿色
-        
-        # 局花部门
-        "局花-局花工艺": "FFFFC0E0",          # 浅粉色
-        "局花-局花": "FFFFA0D0",              # 粉色
-        "局花-物理检测": "FFFF80C0",          # 深粉色
-        
-        # 配片部门
-        "配片-配片": "FFFFD0C0",              # 浅珊瑚色
-        
-        # 滚领部门
-        "滚领-滚领": "FFC0FFD0",              # 浅薄荷色
-        
-        # 辅料部门
-        "辅料-辅料限额": "FFE0FFC0",          # 浅黄绿色
-        "辅料-辅料": "FFD0FFB0",              # 黄绿色
-        "辅料-物理检测": "FFC0FFA0",          # 深黄绿色
-        
-        # 缝纫部门
-        "缝纫-缝纫工艺": "FFFFC0C0",          # 浅红色
-        "缝纫-缝纫开始": "FFFFA0A0",          # 红色
-        "缝纫-缝纫结束": "FFFF8080",          # 深红色
-        
-        # 后整部门
-        "后整-后整": "FFFFE0C0",              # 浅杏色
-        
-        # 工艺部门
-        "工艺-工艺": "FFC1FFE1"               # 浅青色
-    }
-    
-    # 添加标题行
-    title_cell = worksheet['A1']
-    title_cell.value = "生产计划跟踪记录"
-    worksheet.merge_cells(start_row=1, start_column=1, end_row=1, end_column=len(df.columns))
-    title_cell.font = openpyxl.styles.Font(bold=True, size=24)
-    title_cell.alignment = openpyxl.styles.Alignment(horizontal='left', vertical='center')
-    
-    # 设置列宽和自动换行
-    for i, col in enumerate(df.columns):
-        # 获取Excel列引用
-        col_letter = openpyxl.utils.get_column_letter(i + 1)
-        
-        # 设置列宽
-        if col == "款号":
-            column_width = max(len(str(col)), df[col].astype(str).map(len).max())
-        else:
-            column_width = 15  # 固定日期列的宽度
-        worksheet.column_dimensions[col_letter].width = min(column_width + 2, 30)
-        
-        # 设置自动换行和边框
-        for row in range(1, len(df) + 3):  # +3 because Excel is 1-based and we added a title row
-            cell = worksheet[f"{col_letter}{row}"]
-            cell.border = thin_border
             
-            # 设置对齐方式
-            if row == 2:  # 表头行 (now row 2 because of title)
-                cell.alignment = openpyxl.styles.Alignment(horizontal='center', vertical='center')
-            elif row == 1:  # 标题行
-                continue  # Skip title row as it's already formatted
-            elif col == "款号":  # 款号列
-                cell.alignment = openpyxl.styles.Alignment(horizontal='left', vertical='top', wrap_text=True)
-            else:  # 日期列
-                cell.alignment = openpyxl.styles.Alignment(horizontal='left', vertical='top', wrap_text=True)
-                
-                # # 为单元格内容添加颜色
-                # if row > 2 and cell.value:  # 跳过标题和表头行
-                #     # 分割多行内容
-                #     step_lines = cell.value.split('\n')
-                    
-                #     # 创建一个新的单元格，用于存储带颜色的文本
-                #     new_cell = worksheet[f"{col_letter}{row}"]
-                    
-                #     # 处理每一行
-                #     for i, line in enumerate(step_lines):
-                #         # 提取步骤名称（去除生产组信息和备注）
-                #         step_name = line.split(' (')[0].split(' [')[0]
-                        
-                #         # 查找匹配的步骤颜色
-                #         color_found = False
-                #         for step_key, color in step_colors.items():
-                #             if line.startswith(step_key):
-                #                 # 设置文本颜色
-                #                 new_cell.font = openpyxl.styles.Font(color=color)
-                #                 color_found = True
-                #                 break
-                        
-                #         # 如果没有找到匹配的步骤，使用默认颜色（黑色）
-                #         if not color_found:
-                #             new_cell.font = openpyxl.styles.Font(color="FF000000")
+            # Collect all steps and their dates
+            for dept, steps in schedule.items():
+                for step, data in steps.items():
+                    all_rows.append({
+                        "公司": style["company"],
+                        "款号": style["style_number"],
+                        "工序": style["process_type"],
+                        "部门": dept,
+                        "步骤": step,
+                        "时间点": data["时间点"],
+                        "备注": data.get("备注", ""),
+                        "订单数量": style["order_quantity"],
+                        "日产量": style["daily_production"],
+                        "生产天数": round(style["order_quantity"] * 1.05 / style["daily_production"], 1)
+                    })
+        
+        # Convert to DataFrame
+        df = pd.DataFrame(all_rows)
+        
+        # Reorder columns to put company first
+        column_order = ["公司", "款号", "工序", "部门", "步骤", "时间点", "备注", "订单数量", "日产量", "生产天数"]
+        df = df[column_order]
+        
+        # Write to Excel
+        df.to_excel(writer, sheet_name='生产进度表', index=False)
+        
+        # Get the workbook and worksheet objects
+        workbook = writer.book
+        worksheet = writer.sheets['生产进度表']
+        
+        # Add formats
+        header_format = workbook.add_format({
+            'bold': True,
+            'text_wrap': True,
+            'valign': 'top',
+            'fg_color': '#D7E4BC',
+            'border': 1
+        })
+        
+        # Format the header
+        for col_num, value in enumerate(df.columns.values):
+            worksheet.write(0, col_num, value, header_format)
+            # Set column width
+            if value in ["公司", "款号"]:
+                worksheet.set_column(col_num, col_num, 15)
+            elif value in ["工序", "部门", "步骤"]:
+                worksheet.set_column(col_num, col_num, 20)
+            elif value == "备注":
+                worksheet.set_column(col_num, col_num, 30)
+            else:
+                worksheet.set_column(col_num, col_num, 15)
+        
+        # Freeze the first two columns (公司 and 款号)
+        worksheet.freeze_panes(1, 2)
+        
+        # Add filters
+        worksheet.autofilter(0, 0, len(df), len(df.columns) - 1)
     
-    # 冻结首行和款号列
-    worksheet.freeze_panes = 'B2'  # Changed back to B2 to match original title method
-    
-    # 保存并关闭Excel文件
-    writer.close()
-    
-    return excel_path
+    output.seek(0)
+    return output
         
 # 画时间线
 def plot_timeline(schedule, process_type, confirmation_period):
