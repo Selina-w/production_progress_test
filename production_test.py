@@ -1337,7 +1337,13 @@ def generate_excel_report(styles):
     # 创建DataFrame
     data = []
     for style_number in sorted(style_steps.keys()):
-        row = {"款号": style_number}
+        #row = {"款号": style_number}
+        # Find the style object to get company information
+        style = next((s for s in styles if s["style_number"] == style_number), None)
+        row = {
+            "公司": style["company"] if style else "",
+            "款号": style_number
+        }
         for date in all_dates:
             row[date] = style_steps[style_number].get(date, "")
         data.append(row)
@@ -1490,7 +1496,7 @@ def generate_excel_report(styles):
     
     # 冻结首行和款号列
     #worksheet.freeze_panes = 'B2'  # Changed back to B2 to match original title method
-    worksheet.freeze_panes = 'C2'
+    worksheet.freeze_panes = 'C3'
     
     # 保存并关闭Excel文件
     writer.close()
