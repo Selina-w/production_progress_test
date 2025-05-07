@@ -116,8 +116,650 @@ def get_department_steps(process_type=None):
     # If "满花局花绣花", return all departments
     return all_departments
 
+def get_department_steps_longbing(process_type=None, confirmation_period = None):
+    """Get department steps based on process type"""
+    if confirmation_period = 'SC':
+        all_departments = {
+            "毛坯": ["仕样书", "一次工艺分析", "一次排版", "一次用料", "棉纱", "毛坯"],
+            "光坯": ["二次工艺分析", "二次排版", "二次用料", "光坯", "物理检测验布"],
+            "产前确认": ["辅料样发送", "辅料确认", "色样发送", "色样确认", "印绣样品确认", "满花样品", "样品裁剪", "局花样品", "绣花样品", "缝制", "发件", "确认"],
+            "满花": ["满花工艺", "满花", "满花后整", "物理检测"],
+            "裁剪": ["工艺样版", "裁剪"],
+            "局花": ["局花工艺", "局花", "物理检测"],
+            "绣花": ["绣花工艺", "绣花", "物理检测"],
+            "配片": ["配片"],
+            "滚领": ["滚领布"],
+            "辅料": ["辅料限额", "辅料", "物理检测"],
+            "缝纫": ["缝纫工艺", "缝纫开始", "缝纫结束"],
+            "后整": ["后整工艺", "检验", "包装", "检针装箱"],
+            "工艺": ["船样检测摄影", "外观"]
+        }
+    else:
+        all_departments = {
+            "毛坯": ["仕样书", "一次工艺分析", "一次排版", "一次用料", "棉纱", "毛坯"],
+            "光坯": ["光坯", "物理检测验布"],
+            "产前确认": ["满花样品", "样品裁剪", "局花样品", "绣花样品", "缝制", "发件", "确认"],
+            "满花": ["满花工艺", "满花", "满花后整", "物理检测"],
+            "裁剪": ["工艺样版", "裁剪"],
+            "局花": ["局花工艺", "局花", "物理检测"],
+            "绣花": ["绣花工艺", "绣花", "物理检测"],
+            "配片": ["配片"],
+            "滚领": ["滚领布"],
+            "辅料": ["辅料限额", "辅料", "物理检测"],
+            "缝纫": ["缝纫工艺", "缝纫开始", "缝纫结束"],
+            "后整": ["后整工艺", "检验", "包装", "检针装箱"],
+            "工艺": ["船样检测摄影", "外观"]
+        }
+    
+    # If no process type is specified, return all departments
+    if process_type is None:
+        return all_departments
+
+    # Define exclusions for different process types
+    exclusion_map = {
+        "满花局花": ["绣花"],
+        "满花绣花": ["局花"],
+        "局花绣花": ["满花"],
+        "满花": ["局花", "绣花"],
+        "局花": ["满花", "绣花"],
+        "绣花": ["满花", "局花"],
+        "无印绣": ["满花", "局花", "绣花"]
+    }
+
+    # If process_type is invalid, return all departments
+    if process_type not in exclusion_map and process_type != "满花局花绣花":
+        raise ValueError(f"Invalid process_type: {process_type}")
+
+    # Exclude specified departments
+    if process_type in exclusion_map:
+        filtered_departments = {k: v for k, v in all_departments.items() if k not in exclusion_map[process_type]}
+        
+        # Special handling for 无印绣 process type
+        if process_type == "无印绣" and "产前确认" in filtered_departments:
+            # Keep only the last three steps for 无印绣
+            filtered_departments["产前确认"] = ["缝制", "发件", "确认"]
+        # Handle other process types
+        elif "产前确认" in filtered_departments:
+            remove_steps = {"满花": "满花样品", "局花": "局花样品", "绣花": "绣花样品"}
+            filtered_departments["产前确认"] = [step for step in filtered_departments["产前确认"]
+                                                if step not in [remove_steps.get(p) for p in exclusion_map[process_type] if p in remove_steps]]
+        return filtered_departments
+
+    # If "满花局花绣花", return all departments
+    return all_departments
+
+def calculate_schedule_longbing(sewing_start_date, process_type, confirmation_period, order_quantity, daily_production, start_time_period="上午"):
+    """ 计算整个生产流程的时间安排 """
+    schedule = {}
+    
+    # 将所有工序的时间初始化为字典
+    for dept, steps in get_department_steps_longbing(process_type, confirmation_period).items():
+        schedule[dept] = {}
+    
+    Y = sewing_start_date  # 订单缝纫开始日期
+    if confirmation_period == 'SC':
+        if process_type == "满花局花绣花":
+            X = Y - timedelta(days=64)
+        elif process_type == "满花局花":
+            X = Y - timedelta(days=54)
+        elif process_type == "满花绣花":
+            X = Y - timedelta(days=58)
+        elif process_type == "局花绣花":
+            X = Y - timedelta(days=62)
+        elif process_type == "满花":
+            X = Y - timedelta(days=48)
+        elif process_type == "局花":
+            X = Y - timedelta(days=52)
+        elif process_type == "绣花":
+            X = Y - timedelta(days=54)
+        else:
+            X = Y - timedelta(days=46)
+
+    elif confirmation_period == '百货店':
+        if process_type == "满花局花绣花":
+            X = Y - timedelta(days=54)
+        elif process_type == "满花局花":
+            X = Y - timedelta(days=46)
+        elif process_type == "满花绣花":
+            X = Y - timedelta(days=49)
+        elif process_type == "局花绣花":
+            X = Y - timedelta(days=48)
+        elif process_type == "满花":
+            X = Y - timedelta(days=41)
+        elif process_type == "局花":
+            X = Y - timedelta(days=40)
+        elif process_type == "绣花":
+            X = Y - timedelta(days=43)
+        else:
+            X = Y - timedelta(days=36)
+
+    # 1. 计算毛坯
+
+    schedule["毛坯"]["仕样书"] = {"时间点": X + timedelta(days=6)}
+    schedule["毛坯"]["一次工艺分析"] = {"时间点": X + timedelta(days=7)}
+    schedule["毛坯"]["一次排版"] = {"时间点": X + timedelta(days=9)}
+    schedule["毛坯"]["一次用料"] = {"时间点": X + timedelta(days=9)}
+    schedule["毛坯"]["棉纱"] = {"时间点": X + timedelta(days=12)}
+    schedule["毛坯"]["毛坯"] = {"时间点": X + timedelta(days=16)}
+    # 2. 计算光坯
+    if confirmation_period == 'SC':
+        if process_type == "满花局花绣花":
+            schedule["光坯"]["二次工艺分析"] = {"时间点": X + timedelta(days=29)}
+        elif process_type == "满花局花":
+            schedule["光坯"]["二次工艺分析"] = {"时间点": X + timedelta(days=27)}
+        elif process_type == "满花绣花":
+            schedule["光坯"]["二次工艺分析"] = {"时间点": X + timedelta(days=28)}
+        elif process_type == "局花绣花":
+            schedule["光坯"]["二次工艺分析"] = {"时间点": X + timedelta(days=28)}
+        else:
+            schedule["光坯"]["二次工艺分析"] = {"时间点": X + timedelta(days=26)}
+        schedule["光坯"]["二次排版"] = {"时间点": schedule["光坯"]["二次工艺分析"]["时间点"] + timedelta(days=2)}
+        schedule["光坯"]["二次用料"] = {"时间点": schedule["光坯"]["二次排版"]["时间点"]}
+        schedule["光坯"]["光坯"] = {"时间点": schedule["光坯"]["二次用料"]["时间点"] + timedelta(days=5)}
+        schedule["光坯"]["物理检测验布"] = {"时间点": schedule["光坯"]["光坯"]["时间点"] + timedelta(days=1)}
+    elif confirmation_period == '百货店':
+        schedule["光坯"]["光坯"] = {"时间点": X + timedelta(days=21)}
+        schedule["光坯"]["物理检测验布"] = {"时间点": X + timedelta(days=22)}
+    # 3. 计算产前确认阶段
+    if confirmation_period == 'SC':
+        if process_type != '无印绣':
+            schedule["产前确认"]["辅料样发送"] = {"时间点": X + timedelta(days=14)}
+            if process_type == "满花局花绣花":
+                schedule["产前确认"]["辅料确认"] = {"时间点": X + timedelta(days=28)}
+            elif process_type == "满花局花":
+                schedule["产前确认"]["辅料确认"] = {"时间点": X + timedelta(days=26)}
+            elif process_type == "满花绣花":
+                schedule["产前确认"]["辅料确认"] = {"时间点": X + timedelta(days=27)}
+            elif process_type == "局花绣花":
+                schedule["产前确认"]["辅料确认"] = {"时间点": X + timedelta(days=27)}
+            else:
+                schedule["产前确认"]["辅料确认"] = {"时间点": X + timedelta(days=25)}
+            schedule["产前确认"]["色样发送"] = {"时间点": X + timedelta(days=10)}
+            schedule["产前确认"]["色样确认"] = {"时间点": schedule["产前确认"]["辅料确认"]["时间点"]}
+            schedule["产前确认"]["印绣样品确认"] = {"时间点": schedule["产前确认"]["辅料确认"]["时间点"]}
+            if process_type == "满花局花绣花":
+               schedule["产前确认"]["满花样品"] = {"时间点": X + timedelta(days=38)}
+            elif process_type == "满花局花":
+                schedule["产前确认"]["满花样品"] = {"时间点": X + timedelta(days=36)}
+            elif process_type == "满花绣花":
+                schedule["产前确认"]["满花样品"] = {"时间点": X + timedelta(days=37)}
+            elif process_type == "满花":
+                schedule["产前确认"]["满花样品"] = {"时间点": X + timedelta(days=35)}
+            if "满花" in process_type:
+                schedule["产前确认"]["样品裁剪"] = {"时间点": schedule["产前确认"]["满花样品"]["时间点"] + timedelta(days=1)}
+            else:
+                if process_type != '绣花':
+                    schedule["产前确认"]["样品裁剪"] = {"时间点": schedule["产前确认"]["印绣样品确认"]["时间点"] + timedelta(days=10)}
+            if "局花" in process_type:
+                schedule["产前确认"]["局花样品"] = {"时间点": schedule["产前确认"]["样品裁剪"]["时间点"] + timedelta(days=1)}
+            if process_type == "满花局花绣花":
+                schedule["产前确认"]["绣花样品"] = {"时间点": X + timedelta(days=42)}
+            elif process_type == "满花绣花":
+                schedule["产前确认"]["绣花样品"] = {"时间点": X + timedelta(days=40)}
+            elif process_type == "局花绣花":
+                schedule["产前确认"]["绣花样品"] = {"时间点": X + timedelta(days=40)}
+            elif process_type == "绣花":
+                schedule["产前确认"]["绣花样品"] = {"时间点": X + timedelta(days=36)}
+        if process_type == "满花局花绣花":
+            schedule["产前确认"]["缝制"] = {"时间点": X + timedelta(days=44)}
+        elif process_type == "满花局花":
+            schedule["产前确认"]["缝制"] = {"时间点": X + timedelta(days=40)}
+        elif process_type == "满花绣花":
+            schedule["产前确认"]["缝制"] = {"时间点": X + timedelta(days=42)}
+        elif process_type == "局花绣花":
+            schedule["产前确认"]["缝制"] = {"时间点": X + timedelta(days=42)}
+        elif process_type == "满花":
+            schedule["产前确认"]["缝制"] = {"时间点": X + timedelta(days=38)}
+        elif process_type == "局花":
+            schedule["产前确认"]["缝制"] = {"时间点": X + timedelta(days=38)}
+        elif process_type == "绣花":
+            schedule["产前确认"]["缝制"] = {"时间点": X + timedelta(days=38)}
+        else:
+            schedule["产前确认"]["缝制"] = {"时间点": X + timedelta(days=36)}
+    
+    elif confirmation_period == '百货店':
+        if "满花" in process_type:
+            schedule["产前确认"]["满花样品"] = {"时间点": schedule["光坯"]["物理检测验布"]["时间点"] + timedelta(days=1)}
+            schedule["产前确认"]["样品裁剪"] = {"时间点": schedule["产前确认"]["满花样品"]["时间点"] + timedelta(days=1)}
+        else:
+            schedule["产前确认"]["样品裁剪"] = {"时间点": schedule["光坯"]["物理检测验布"]["时间点"] + timedelta(days=1)}
+        if "局花" in process_type:
+            schedule["产前确认"]["局花样品"] = {"时间点": schedule["产前确认"]["样品裁剪"]["时间点"] + timedelta(days=1)}
+        if process_type == "满花局花绣花":
+            schedule["产前确认"]["绣花样品"] = {"时间点": X + timedelta(days=27)}
+            schedule["产前确认"]["缝制"] = {"时间点": schedule["产前确认"]["绣花样品"]["时间点"] + timedelta(days=2)}
+        elif process_type == "满花绣花":
+            schedule["产前确认"]["绣花样品"] = {"时间点": X + timedelta(days=26)}
+            schedule["产前确认"]["缝制"] = {"时间点": schedule["产前确认"]["绣花样品"]["时间点"] + timedelta(days=2)}
+        elif process_type == "局花绣花":
+            schedule["产前确认"]["绣花样品"] = {"时间点": X + timedelta(days=26)}
+            schedule["产前确认"]["缝制"] = {"时间点": schedule["产前确认"]["绣花样品"]["时间点"] + timedelta(days=2)}
+        elif process_type == "绣花":
+            schedule["产前确认"]["绣花样品"] = {"时间点": X + timedelta(days=25)}
+            schedule["产前确认"]["缝制"] = {"时间点": schedule["产前确认"]["绣花样品"]["时间点"] + timedelta(days=2)}
+        elif process_type == "满花局花":
+            schedule["产前确认"]["缝制"] = {"时间点": X + timedelta(days=27)}
+        elif process_type == "满花":
+            schedule["产前确认"]["缝制"] = {"时间点": X + timedelta(days=26)}
+        elif process_type == "局花":
+            schedule["产前确认"]["缝制"] = {"时间点": X + timedelta(days=26)}
+        else:
+            schedule["产前确认"]["缝制"] = {"时间点": X + timedelta(days=25)}
+    schedule["产前确认"]["发件"] = {"时间点": schedule["产前确认"]["缝制"]["时间点"] + timedelta(days=1)}
+    schedule["产前确认"]["确认"] = {"时间点": schedule["产前确认"]["发件"]["时间点"] + timedelta(days=5)}
+    
+    
+
+    # 4. 计算满花流程
+    if "满花" in process_type:
+        if confirmation_period == 'SC':
+            schedule["满花"]["满花工艺"] = {"时间点": schedule["产前确认"]["满花样品"]["时间点"]- timedelta(days=10)}
+            schedule["满花"]["满花"] = {"时间点": schedule["产前确认"]["满花样品"]["时间点"] + timedelta(days=2)}
+        elif confirmation_period == '百货店':
+            schedule["满花"]["满花工艺"] = {"时间点": schedule["产前确认"]["确认"]["时间点"]}
+            schedule["满花"]["满花"] = {"时间点": schedule["产前确认"]["满花样品"]["时间点"] + timedelta(days=3)}
+        schedule["满花"]["满花后整"] = {"时间点": schedule["满花"]["满花"]["时间点"] + timedelta(days=1)}
+        schedule["满花"]["物理检测"] = {"时间点": schedule["满花"]["满花后整"]["时间点"] + timedelta(days=1)}
+
+    # 5. 计算裁剪流程
+    schedule["裁剪"]["工艺样版"] = {"时间点": schedule["产前确认"]["确认"]["时间点"]}
+    if confirmation_period == 'SC':
+        schedule["裁剪"]["裁剪"] = {"时间点": schedule["裁剪"]["工艺样版"]["时间点"] + timedelta(days=3)}
+    elif confirmation_period == '百货店':
+        if process_type == "满花局花绣花":
+            schedule["裁剪"]["裁剪"] = {"时间点": X + timedelta(days=43)}
+        elif process_type == "满花局花":
+            schedule["裁剪"]["裁剪"] = {"时间点": X + timedelta(days=41)}
+        elif process_type == "满花绣花":
+            schedule["裁剪"]["裁剪"] = {"时间点": X + timedelta(days=42)}
+        elif process_type == "局花绣花":
+            schedule["裁剪"]["裁剪"] = {"时间点": X + timedelta(days=37)}
+        elif process_type == "满花":
+            schedule["裁剪"]["裁剪"] = {"时间点": X + timedelta(days=40)}
+        elif process_type == "局花":
+            schedule["裁剪"]["裁剪"] = {"时间点": X + timedelta(days=35)}
+        elif process_type == "绣花":
+            schedule["裁剪"]["裁剪"] = {"时间点": X + timedelta(days=36)}
+        else:
+            schedule["裁剪"]["裁剪"] = {"时间点": X + timedelta(days=34)}
+
+
+    # 6. 计算局花流程
+    if confirmation_period == 'SC':
+        if process_type == "满花局花绣花":
+            schedule["局花"]["局花工艺"] = {"时间点": X + timedelta(days=28)}
+            schedule["局花"]["局花"] = {"时间点": X + timedelta(days=56)}
+        elif process_type == "满花局花":
+            schedule["局花"]["局花工艺"] = {"时间点": X + timedelta(days=26)}
+            schedule["局花"]["局花"] = {"时间点": X + timedelta(days=52)}
+        elif process_type == "局花绣花":
+            schedule["局花"]["局花工艺"] = {"时间点": X + timedelta(days=27)}
+            schedule["局花"]["局花"] = {"时间点": X + timedelta(days=54)}
+        elif process_type == "局花":
+            schedule["局花"]["局花工艺"] = {"时间点": X + timedelta(days=25)}
+            schedule["局花"]["局花"] = {"时间点": X + timedelta(days=50)}
+    elif confirmation_period == '百货店':   
+        if "局花" in schedule:
+            schedule["局花"]["局花工艺"] = {"时间点": schedule["裁剪"]["工艺样版"]["时间点"]["时间点"]}
+        if process_type == "满花局花绣花":
+            schedule["局花"]["局花"] = {"时间点": X + timedelta(days=46)}
+        elif process_type == "满花局花":
+            schedule["局花"]["局花"] = {"时间点": X + timedelta(days=44)}
+        elif process_type == "局花绣花":
+            schedule["局花"]["局花"] = {"时间点": X + timedelta(days=40)}
+        elif process_type == "局花":
+            schedule["局花"]["局花"] = {"时间点": X + timedelta(days=38)}
+    if "局花" in schedule:
+        schedule["局花"]["物理检测"] = {"时间点": schedule["局花"]["局花"]["时间点"] + timedelta(days=1)}
+
+    # 7. 计算绣花流程
+    if "绣花" in schedule:
+        if confirmation_period == 'SC':
+            schedule["绣花"]["绣花工艺"] = {"时间点": schedule["产前确认"]["辅料确认"]["时间点"]}
+            if process_type == "满花局花绣花":
+                schedule["绣花"]["绣花"] = {"时间点":X + timedelta(days=62)}
+            elif process_type == "满花绣花":
+                schedule["绣花"]["绣花"] = {"时间点":X + timedelta(days=56)}
+            elif process_type == "局花绣花":
+                schedule["绣花"]["绣花"] = {"时间点":X + timedelta(days=60)}
+            elif process_type == "绣花":
+                schedule["绣花"]["绣花"] = {"时间点":X + timedelta(days=52)}
+
+        elif confirmation_period == '百货店':   
+            schedule["绣花"]["绣花工艺"] = {"时间点": schedule["裁剪"]["工艺样版"]["时间点"]}
+            if process_type == "满花局花绣花":
+                schedule["绣花"]["绣花"] = {"时间点":X + timedelta(days=52)}
+            elif process_type == "满花绣花":
+                schedule["绣花"]["绣花"] = {"时间点":X + timedelta(days=47)}
+            elif process_type == "局花绣花":
+                schedule["绣花"]["绣花"] = {"时间点":X + timedelta(days=46)}
+            elif process_type == "绣花":
+                schedule["绣花"]["绣花"] = {"时间点":X + timedelta(days=41)}
+        schedule["绣花"]["物理检测"] = {"时间点": schedule["绣花"]["绣花"]["时间点"] + timedelta(days=1)}
+
+    # 8. 计算配片
+    if "绣花" in schedule:
+        schedule["配片"]["配片"] = {
+                "时间点": schedule["绣花"]["物理检测"]["时间点"]
+            }
+    else:
+        if "局花" in schedule:
+            schedule["配片"]["配片"] = {"时间点": schedule["局花"]["物理检测"]["时间点"]}
+        else:
+            schedule["配片"]["配片"] = {"时间点": schedule["裁剪"]["裁剪"]["时间点"]}
+    if confirmation_period == '百货店' and process_type == "无印绣":
+        schedule["配片"]["配片"] = {"时间点": schedule["裁剪"]["裁剪"]["时间点"] + timedelta(days=1)}
+
+    # 9. 计算滚领
+    schedule["滚领"]["滚领布"] = {"时间点": schedule["配片"]["配片"]["时间点"]}
+
+    # 10. 计算辅料流程（并行）--从这开始
+    if confirmation_period == 'SC':
+        schedule["辅料"]["辅料限额"] = {"时间点":  X + timedelta(days=13)}
+        schedule["辅料"]["辅料"] = {"时间点":X + timedelta(days=43)}
+    elif confirmation_period == '百货店':   
+        schedule["辅料"]["辅料限额"] = {"时间点":  X + timedelta(days=7)}
+        schedule["辅料"]["辅料"] = {"时间点":X + timedelta(days=22)}
+    schedule["辅料"]["物理检测"] = {"时间点": schedule["辅料"]["辅料"]["时间点"] + timedelta(days=1)}
+
+    # 11. 计算缝纫工艺
+    schedule["缝纫"]["缝纫工艺"] = {"时间点": schedule["配片"]["配片"]["时间点"] - timedelta(days=1)}
+    schedule["缝纫"]["缝纫开始"] = {"时间点": sewing_start_date, "备注": start_time_period} #{"时间点": schedule["缝纫"]["缝纫工艺"]["时间点"] + timedelta(days=2)}
+    
+    # 计算缝纫结束时间，根据小数部分决定是当天上午结束还是下午结束或第二天
+    sewing_days_float = order_quantity * 1.05 / daily_production
+    sewing_days_int = int(sewing_days_float)
+    sewing_days_decimal = sewing_days_float - sewing_days_int
+    
+    if sewing_days_decimal <= 0.5:
+        # 如果小数部分小于等于0.5，则当天中午结束
+        sewing_end_date = schedule["缝纫"]["缝纫开始"]["时间点"] + timedelta(days=sewing_days_int)
+        schedule["缝纫"]["缝纫结束"] = {
+            "时间点": sewing_end_date,
+            "备注": "中午结束" if sewing_days_decimal > 0 else "全天"
+        }
+    else:
+        # 如果小数部分大于0.5，则需要多一天
+        sewing_end_date = schedule["缝纫"]["缝纫开始"]["时间点"] + timedelta(days=sewing_days_int + 1)
+        schedule["缝纫"]["缝纫结束"] = {
+            "时间点": sewing_end_date,
+            "备注": "全天"
+        }
+
+    # 考虑开始时间是上午还是下午
+    if start_time_period == "上午":
+        if sewing_days_decimal <= 0.5:
+            # 如果小数部分小于等于0.5，则当天下午结束
+            sewing_end_date = schedule["缝纫"]["缝纫开始"]["时间点"] + timedelta(days=sewing_days_int)
+            schedule["缝纫"]["缝纫结束"] = {
+                "时间点": sewing_end_date,
+                "备注": "下午" if sewing_days_decimal > 0 else "上午"
+            }
+        else:
+            # 如果小数部分大于0.5，则第二天上午结束
+            sewing_end_date = schedule["缝纫"]["缝纫开始"]["时间点"] + timedelta(days=sewing_days_int + 1)
+            schedule["缝纫"]["缝纫结束"] = {
+                "时间点": sewing_end_date,
+                "备注": "上午"
+            }
+    else:  # 下午开始
+        if sewing_days_decimal <= 0:
+            # 如果刚好整数天，则最后一天下午结束
+            sewing_end_date = schedule["缝纫"]["缝纫开始"]["时间点"] + timedelta(days=sewing_days_int)
+            schedule["缝纫"]["缝纫结束"] = {
+                "时间点": sewing_end_date,
+                "备注": "下午"
+            }
+        elif sewing_days_decimal <= 0.5:
+            # 如果小数部分小于等于0.5，则第二天上午结束
+            sewing_end_date = schedule["缝纫"]["缝纫开始"]["时间点"] + timedelta(days=sewing_days_int + 1)
+            schedule["缝纫"]["缝纫结束"] = {
+                "时间点": sewing_end_date,
+                "备注": "上午"
+            }
+        else:
+            # 如果小数部分大于0.5，则第二天下午结束
+            sewing_end_date = schedule["缝纫"]["缝纫开始"]["时间点"] + timedelta(days=sewing_days_int + 1)
+            schedule["缝纫"]["缝纫结束"] = {
+                "时间点": sewing_end_date,
+                "备注": "下午"
+            }
+
+
+    # 12. 计算后整工艺
+    if process_type != "无印绣":
+        schedule["后整"]["后整工艺"] = {"时间点": schedule["缝纫"]["缝纫工艺"]["时间点"]}
+    else:
+        schedule["后整"]["后整工艺"] = {"时间点": schedule["缝纫"]["缝纫工艺"]["时间点"]+ timedelta(days=7)}
+    schedule["后整"]["检验"] = {"时间点": schedule["缝纫"]["缝纫结束"]["时间点"]+ timedelta(days=1)}
+    schedule["后整"]["包装"] = {"时间点": schedule["缝纫"]["缝纫结束"]["时间点"]+ timedelta(days=2)}
+    schedule["后整"]["检针装箱"] = {"时间点": schedule["缝纫"]["缝纫结束"]["时间点"]+ timedelta(days=3)}
+
+    # 13. 计算工艺
+    schedule["工艺"]["船样检测摄影"] = {"时间点": schedule["后整"]["后整工艺"]["时间点"]+ timedelta(days=4)}
+    schedule["工艺"]["检验"] = {"时间点": schedule["工艺"]["船样检测摄影"]["时间点"]+ timedelta(days=3)}
+    
+
+    return schedule
+
+
+def calculate_schedule_beibei_new(sewing_start_date, process_type, order_quantity, daily_production, start_time_period="上午"):
+    """ 计算整个生产流程的时间安排 """
+    schedule = {}
+    
+    # 将所有工序的时间初始化为字典
+    for dept, steps in get_department_steps(process_type).items():
+        schedule[dept] = {}
+    
+    Y = sewing_start_date  # 订单缝纫开始日期
+    if process_type == "满花局花绣花":
+        X = Y - timedelta(days=27)
+    elif process_type == "满花局花":
+        X = Y - timedelta(days=23)
+    elif process_type == "满花绣花":
+        X = Y - timedelta(days=25)
+    elif process_type == "局花绣花":
+        X = Y - timedelta(days=23)
+    elif process_type == "满花":
+        X = Y - timedelta(days=22)
+    elif process_type == "局花":
+        X = Y - timedelta(days=20)
+    else:
+        X = Y - timedelta(days=21)
+
+    # 1. 计算产前确认阶段
+    schedule["产前确认"]["代用面料裁剪"] = {"时间点": X + timedelta(days=5)}
+    if "满花" in process_type:
+        schedule["产前确认"]["满花样品"] = {"时间点": X + timedelta(days=6)}
+    if process_type == "满花局花绣花" or process_type == "满花局花":
+        schedule["产前确认"]["局花样品"] = {"时间点": X + timedelta(days=7)}
+    else:
+        if "局花" in process_type:
+            schedule["产前确认"]["局花样品"] = {"时间点": X + timedelta(days=6)}
+    if process_type == "满花局花绣花":
+        schedule["产前确认"]["绣花样品"] = {"时间点": X + timedelta(days=8)}
+        schedule["产前确认"]["版型"] = {"时间点": X + timedelta(days=9)}
+    elif process_type == "满花局花":
+        schedule["产前确认"]["版型"] = {"时间点": X + timedelta(days=8)}
+    elif process_type == "满花绣花" or process_type == "局花绣花":
+        schedule["产前确认"]["绣花样品"] = {"时间点": X + timedelta(days=7)}
+        schedule["产前确认"]["版型"] = {"时间点": X + timedelta(days=8)}
+    elif process_type == "满花" or process_type == "局花":
+        schedule["产前确认"]["版型"] = {"时间点": X + timedelta(days=7)}
+    elif process_type == "绣花":
+        schedule["产前确认"]["绣花样品"] = {"时间点": X + timedelta(days=6)}
+        schedule["产前确认"]["版型"] = {"时间点": X + timedelta(days=7)}
+    schedule["产前确认"]["代用样品发送"] = {"时间点": schedule["产前确认"]["版型"]["时间点"]}
+    schedule["产前确认"]["版型确认"] = {"时间点": schedule["产前确认"]["代用样品发送"]["时间点"] + timedelta(days=5)}
+    schedule["产前确认"]["印绣样品确认"] = {"时间点": schedule["产前确认"]["版型确认"]["时间点"]}
+    schedule["产前确认"]["辅料样发送"] = {"时间点": X + timedelta(days=10)}
+    schedule["产前确认"]["辅料确认"] = {"时间点": schedule["产前确认"]["辅料样发送"]["时间点"] + timedelta(days=5)}
+    schedule["产前确认"]["色样发送"] = {"时间点": X + timedelta(days=5)}
+    schedule["产前确认"]["色样确认"] = {"时间点": schedule["产前确认"]["色样发送"]["时间点"] + timedelta(days=5)}
+    
+    # 2. 计算面料阶段
+    schedule["面料"]["仕样书"] = {"时间点": X + timedelta(days=2)}
+    schedule["面料"]["工艺分析"] = {"时间点": X + timedelta(days=2)}
+    schedule["面料"]["排版"] = {"时间点": X + timedelta(days=3)}
+    schedule["面料"]["用料"] = {"时间点": X + timedelta(days=3)}
+    
+    schedule["面料"]["棉纱"] = {"时间点": X + timedelta(days=6)}
+    schedule["面料"]["毛坯"] = {"时间点": X + timedelta(days=9)}
+    schedule["面料"]["光坯"] = {"时间点": X + timedelta(days=14)}
+    schedule["面料"]["物理检测验布"] = {"时间点": schedule["面料"]["光坯"]["时间点"] + timedelta(days=1)}
+
+    # 3. 计算满花流程
+    if "满花" in schedule:
+        schedule["满花"]["满花工艺"] = {"时间点": X+ timedelta(days=14)}
+        schedule["满花"]["满花"] = {"时间点": schedule["满花"]["满花工艺"]["时间点"] + timedelta(days=3)}
+        schedule["满花"]["满花后整"] = {"时间点": schedule["满花"]["满花"]["时间点"] + timedelta(days=1)}
+        schedule["满花"]["物理检测"] = {"时间点": schedule["满花"]["满花后整"]["时间点"] + timedelta(days=1)}
+
+    # 5. 计算裁剪流程
+    schedule["裁剪"]["工艺样版"] = {"时间点": schedule["产前确认"]["版型确认"]["时间点"] + timedelta(days=1)}
+    
+    if process_type == "局花" or process_type == "绣花" or process_type == "局花绣花":
+        schedule["裁剪"]["裁剪"] = {"时间点": X + timedelta(days=16)}
+    else:
+        schedule["裁剪"]["裁剪"] = {"时间点": X + timedelta(days=20)}
+
+
+    # 4. 计算局花流程
+    if "局花" in schedule:
+        schedule["局花"]["局花工艺"] = {"时间点": schedule["裁剪"]["工艺样版"]["时间点"]}
+        if process_type == "满花局花绣花" or process_type == "满花局花":
+            schedule["局花"]["局花"] = {"时间点": X + timedelta(days=22)}
+        else:
+            schedule["局花"]["局花"] = {"时间点": X + timedelta(days=18)}
+        schedule["局花"]["物理检测"] = {"时间点": schedule["局花"]["局花"]["时间点"] + timedelta(days=1)}
+
+    # 5. 计算绣花流程
+    if "绣花" in schedule:
+        schedule["绣花"]["绣花工艺"] = {"时间点": schedule["裁剪"]["工艺样版"]["时间点"]}
+        if process_type == "满花局花绣花":
+            schedule["绣花"]["绣花"] = {"时间点":X + timedelta(days=25)}
+        elif process_type == "满花绣花":
+            schedule["绣花"]["绣花"] = {"时间点":X + timedelta(days=23)}
+        elif process_type == "局花绣花":
+            schedule["绣花"]["绣花"] = {"时间点":X + timedelta(days=21)}
+        else:
+            schedule["绣花"]["绣花"] = {"时间点":X + timedelta(days=19)}
+        schedule["绣花"]["物理检测"] = {"时间点": schedule["绣花"]["绣花"]["时间点"] + timedelta(days=1)}
+
+    # 6. 计算配片
+    if "绣花" in schedule:
+        schedule["配片"]["配片"] = {
+                "时间点": schedule["绣花"]["物理检测"]["时间点"]
+            }
+    else:
+        if "局花" in schedule:
+            schedule["配片"]["配片"] = {"时间点": schedule["局花"]["物理检测"]["时间点"]}
+        else:
+            schedule["配片"]["配片"] = {"时间点": schedule["裁剪"]["裁剪"]["时间点"]}
+
+    # 7. 计算滚领
+    schedule["滚领"]["滚领布"] = {"时间点": schedule["配片"]["配片"]["时间点"]}
+
+    # 8. 计算辅料流程（并行）--从这开始
+    schedule["辅料"]["辅料限额"] = {"时间点":  X + timedelta(days=5)}
+    schedule["辅料"]["辅料"] = {"时间点":X + timedelta(days=15)}
+    schedule["辅料"]["物理检测"] = {"时间点": schedule["辅料"]["辅料"]["时间点"] + timedelta(days=1)}
+    if process_type == "满花局花绣花":
+        schedule["缝纫"]["缝纫工艺"] = {"时间点": X + timedelta(days=25)}
+    elif process_type == "满花局花":
+        schedule["缝纫"]["缝纫工艺"] = {"时间点": X + timedelta(days=21)}
+    elif process_type == "满花绣花":
+        schedule["缝纫"]["缝纫工艺"] = {"时间点": X + timedelta(days=23)}
+    elif process_type == "局花绣花":
+        schedule["缝纫"]["缝纫工艺"] = {"时间点": X + timedelta(days=21)}
+    elif process_type == "满花":
+        schedule["缝纫"]["缝纫工艺"] = {"时间点": X + timedelta(days=20)}
+    elif process_type == "局花":
+        schedule["缝纫"]["缝纫工艺"] = {"时间点": X + timedelta(days=18)}
+    else:
+        schedule["缝纫"]["缝纫工艺"] = {"时间点": X + timedelta(days=19)}
+
+    # 9. 计算缝纫工艺
+    schedule["缝纫"]["缝纫开始"] = {"时间点": sewing_start_date, "备注": start_time_period} #{"时间点": schedule["缝纫"]["缝纫工艺"]["时间点"] + timedelta(days=2)}
+    
+    # 计算缝纫结束时间，根据小数部分决定是当天上午结束还是下午结束或第二天
+    sewing_days_float = order_quantity * 1.05 / daily_production
+    sewing_days_int = int(sewing_days_float)
+    sewing_days_decimal = sewing_days_float - sewing_days_int
+    
+    if sewing_days_decimal <= 0.5:
+        # 如果小数部分小于等于0.5，则当天中午结束
+        sewing_end_date = schedule["缝纫"]["缝纫开始"]["时间点"] + timedelta(days=sewing_days_int)
+        schedule["缝纫"]["缝纫结束"] = {
+            "时间点": sewing_end_date,
+            "备注": "中午结束" if sewing_days_decimal > 0 else "全天"
+        }
+    else:
+        # 如果小数部分大于0.5，则需要多一天
+        sewing_end_date = schedule["缝纫"]["缝纫开始"]["时间点"] + timedelta(days=sewing_days_int + 1)
+        schedule["缝纫"]["缝纫结束"] = {
+            "时间点": sewing_end_date,
+            "备注": "全天"
+        }
+
+    # 考虑开始时间是上午还是下午
+    if start_time_period == "上午":
+        if sewing_days_decimal <= 0.5:
+            # 如果小数部分小于等于0.5，则当天下午结束
+            sewing_end_date = schedule["缝纫"]["缝纫开始"]["时间点"] + timedelta(days=sewing_days_int)
+            schedule["缝纫"]["缝纫结束"] = {
+                "时间点": sewing_end_date,
+                "备注": "下午" if sewing_days_decimal > 0 else "上午"
+            }
+        else:
+            # 如果小数部分大于0.5，则第二天上午结束
+            sewing_end_date = schedule["缝纫"]["缝纫开始"]["时间点"] + timedelta(days=sewing_days_int + 1)
+            schedule["缝纫"]["缝纫结束"] = {
+                "时间点": sewing_end_date,
+                "备注": "上午"
+            }
+    else:  # 下午开始
+        if sewing_days_decimal <= 0:
+            # 如果刚好整数天，则最后一天下午结束
+            sewing_end_date = schedule["缝纫"]["缝纫开始"]["时间点"] + timedelta(days=sewing_days_int)
+            schedule["缝纫"]["缝纫结束"] = {
+                "时间点": sewing_end_date,
+                "备注": "下午"
+            }
+        elif sewing_days_decimal <= 0.5:
+            # 如果小数部分小于等于0.5，则第二天上午结束
+            sewing_end_date = schedule["缝纫"]["缝纫开始"]["时间点"] + timedelta(days=sewing_days_int + 1)
+            schedule["缝纫"]["缝纫结束"] = {
+                "时间点": sewing_end_date,
+                "备注": "上午"
+            }
+        else:
+            # 如果小数部分大于0.5，则第二天下午结束
+            sewing_end_date = schedule["缝纫"]["缝纫开始"]["时间点"] + timedelta(days=sewing_days_int + 1)
+            schedule["缝纫"]["缝纫结束"] = {
+                "时间点": sewing_end_date,
+                "备注": "下午"
+            }
+
+
+    # 10. 计算后整工艺
+    schedule["后整"]["后整工艺"] = {"时间点": schedule["缝纫"]["缝纫工艺"]["时间点"]}
+    schedule["后整"]["检验"] = {"时间点": schedule["缝纫"]["缝纫结束"]["时间点"]+ timedelta(days=1)}
+    schedule["后整"]["包装"] = {"时间点": schedule["缝纫"]["缝纫结束"]["时间点"]+ timedelta(days=2)}
+    schedule["后整"]["检针装箱"] = {"时间点": schedule["缝纫"]["缝纫结束"]["时间点"]+ timedelta(days=3)}
+
+    # 11. 计算工艺
+    schedule["工艺"]["船样检测摄影"] = {"时间点": schedule["后整"]["后整工艺"]["时间点"]+ timedelta(days=4)}
+    schedule["工艺"]["外观"] = {"时间点": schedule["工艺"]["船样检测摄影"]["时间点"]+ timedelta(days=3)}
+    
+
+    return schedule
+
 def calculate_schedule(sewing_start_date, process_type, confirmation_period, order_quantity, daily_production, start_time_period="上午"):
     """ 计算整个生产流程的时间安排 """
+    if confirmation_period = '1个月交期+确认5天':
+        return calculate_schedule_beibei_new(sewing_start_date, process_type, order_quantity, daily_production, start_time_period="上午")
+        
     schedule = {}
     
     # 将所有工序的时间初始化为字典
@@ -469,7 +1111,7 @@ def calculate_schedule(sewing_start_date, process_type, confirmation_period, ord
 
     # 11. 计算工艺
     schedule["工艺"]["船样检测摄影"] = {"时间点": schedule["后整"]["后整工艺"]["时间点"]+ timedelta(days=4)}
-    schedule["工艺"]["检验"] = {"时间点": schedule["工艺"]["船样检测摄影"]["时间点"]+ timedelta(days=3)}
+    schedule["工艺"]["外观"] = {"时间点": schedule["工艺"]["船样检测摄影"]["时间点"]+ timedelta(days=3)}
     
 
     return schedule
@@ -530,14 +1172,24 @@ def rearrange_styles_by_production_group(styles):
             
             for style in first_order_styles:
                 sewing_start_time = datetime.combine(style["sewing_start_date"], datetime.min.time())
-                schedule = calculate_schedule(
-                    sewing_start_time, 
-                    style["process_type"], 
-                    style["cycle"], 
-                    style["order_quantity"], 
-                    style["daily_production"],
-                    style["start_time_period"]
-                )
+                company = style["company"]
+                if company = '贝贝':
+                    schedule = calculate_schedule(
+                        sewing_start_time, 
+                        style["process_type"], 
+                        style["cycle"], 
+                        style["order_quantity"], 
+                        style["daily_production"],
+                        style["start_time_period"]
+                    )
+                else:
+                    schedule = calculate_schedule_longbing(
+                        sewing_start_time, 
+                        style["process_type"], 
+                        style["cycle"], 
+                        style["order_quantity"], 
+                        style["daily_production"],
+                        style["start_time_period"]
                 
                 end_time = schedule["缝纫"]["缝纫结束"]["时间点"]
                 end_remark = schedule["缝纫"]["缝纫结束"].get("备注", "下午结束")
@@ -572,14 +1224,24 @@ def rearrange_styles_by_production_group(styles):
                 
                 for style in current_order_styles:
                     sewing_start_time = datetime.combine(style["sewing_start_date"], datetime.min.time())
-                    schedule = calculate_schedule(
-                        sewing_start_time, 
-                        style["process_type"], 
-                        style["cycle"], 
-                        style["order_quantity"], 
-                        style["daily_production"],
-                        style["start_time_period"]
-                    )
+                    company = style["company"]
+                    if company = '贝贝':
+                        schedule = calculate_schedule(
+                            sewing_start_time, 
+                            style["process_type"], 
+                            style["cycle"], 
+                            style["order_quantity"], 
+                            style["daily_production"],
+                            style["start_time_period"]
+                        )
+                    else:
+                        schedule = calculate_schedule_longbing(
+                            sewing_start_time, 
+                            style["process_type"], 
+                            style["cycle"], 
+                            style["order_quantity"], 
+                            style["daily_production"],
+                            style["start_time_period"]
                     
                     end_time = schedule["缝纫"]["缝纫结束"]["时间点"]
                     end_remark = schedule["缝纫"]["缝纫结束"].get("备注", "下午结束")
@@ -615,14 +1277,24 @@ def generate_excel_report(styles):
         else:
             # 否则重新计算schedule
             sewing_start_time = datetime.combine(style["sewing_start_date"], datetime.min.time()) if not isinstance(style["sewing_start_date"], datetime) else style["sewing_start_date"]
-            schedule = calculate_schedule(
-                sewing_start_time, 
-                style["process_type"], 
-                style["cycle"], 
-                style["order_quantity"], 
-                style["daily_production"],
-                style.get("start_time_period", "上午")
-            )
+            company = style["company"]
+            if company = '贝贝':
+                schedule = calculate_schedule(
+                    sewing_start_time, 
+                    style["process_type"], 
+                    style["cycle"], 
+                    style["order_quantity"], 
+                    style["daily_production"],
+                    style.get("start_time_period", "上午")
+                )
+            else:
+                schedule = calculate_schedule_longbing(
+                    sewing_start_time, 
+                    style["process_type"], 
+                    style["cycle"], 
+                    style["order_quantity"], 
+                    style["daily_production"],
+                    style.get("start_time_period", "上午")
         
         # 收集每个步骤的日期和备注
         for dept, steps in schedule.items():
@@ -1171,14 +1843,24 @@ def generate_department_wise_plots(styles):
     for style in styles:
         sewing_start_time = datetime.combine(style["sewing_start_date"], datetime.min.time())
         start_time_period = style.get("start_time_period", "上午")  # 获取上午/下午信息
-        schedule = calculate_schedule(
-            sewing_start_time, 
-            style["process_type"], 
-            style["cycle"], 
-            style["order_quantity"], 
-            style["daily_production"],
-            start_time_period
-        )
+        company = style["company"]
+        if company = '贝贝':
+            schedule = calculate_schedule(
+                sewing_start_time, 
+                style["process_type"], 
+                style["cycle"], 
+                style["order_quantity"], 
+                style["daily_production"],
+                start_time_period
+            )
+        else:
+            schedule = calculate_schedule_longbing(
+                sewing_start_time, 
+                style["process_type"], 
+                style["cycle"], 
+                style["order_quantity"], 
+                style["daily_production"],
+                start_time_period
         for dept, steps in schedule.items():
             for step, data in steps.items():
                 # 创建一个新字典来存储步骤数据
@@ -1607,6 +2289,33 @@ def generate_department_wise_plots(styles):
                 )
     
     return zip_path
+
+def get_cycle_options(company):
+    """Get valid cycle options based on company"""
+    if company == "贝贝":
+        return [7, 14, 30, "1个月交期+确认5天"]
+    elif company == "龙兵":
+        return ["SC", "百货店"]
+    else:
+        raise ValueError(f"Invalid company: {company}")
+
+def validate_cycle(company, cycle):
+    """Validate cycle value based on company"""
+    valid_options = get_cycle_options(company)
+    if cycle not in valid_options:
+        raise ValueError(f"Invalid cycle value for {company}: {cycle}. Valid options are: {valid_options}")
+    return cycle
+
+def convert_cycle_to_int(company, cycle):
+    """Convert cycle to int if possible based on company"""
+    if company == "贝贝":
+        if cycle == "1个月交期+确认5天":
+            return cycle
+        return int(cycle)
+    elif company == "龙兵":
+        return cycle
+    else:
+        raise ValueError(f"Invalid company: {company}")
     
 def adjust_schedule(schedule, department, delayed_step, new_end_time):
     if department not in schedule or delayed_step not in schedule[department]:
@@ -1772,20 +2481,26 @@ else:
 
     # 添加Excel上传功能
     st.subheader("方式一：上传Excel文件")
-    uploaded_file = st.file_uploader("上传Excel文件 (必需列：款号、缝纫开始日期、缝纫开始时间、工序、确认周转周期, '订单数量', '日产量', '生产组', '生产顺序')", type=['xlsx', 'xls'])
+    uploaded_file = st.file_uploader("上传Excel文件 (必需列：款号、缝纫开始日期、缝纫开始时间、工序、确认周转周期, '订单数量', '日产量', '生产组', '生产顺序', '公司')", type=['xlsx', 'xls'])
 
 
     if uploaded_file is not None:
         try:
             df = pd.read_excel(uploaded_file)
-            required_columns = ['款号', '缝纫开始日期', '缝纫开始时间', '工序', '确认周转周期', '订单数量', '日产量', '生产组', '生产顺序']
+            required_columns = ['款号', '缝纫开始日期', '缝纫开始时间', '工序', '确认周转周期', '订单数量', '日产量', '生产组', '生产顺序', '公司']
             # 显示Excel可选列的说明
             st.info("""
             **Excel文件说明**:
             * 必需列: 款号、缝纫开始日期、缝纫开始时间、工序、确认周转周期、订单数量、日产量、生产组
             * 可选列: 生产顺序 (同一生产组内款式的排产顺序，相同顺序号的款式将在同一天开始生产)
             * 缝纫开始时间列应填写"上午"或"下午"
-            * 工序列应为以下之一: 满花局花绣花、满花局花、满花绣花、局花绣花、满花、局花、绣花
+            * 公司列应为: 贝贝 或 龙兵
+            * 工序列应为以下之一: 
+                - 贝贝: 满花局花绣花、满花局花、满花绣花、局花绣花、满花、局花、绣花
+                - 龙兵: 满花局花绣花、满花局花、满花绣花、局花绣花、满花、局花、绣花、无印绣
+            * 确认周转周期:
+              - 贝贝: 7, 14, 30, "1个月交期+确认5天"
+              - 龙兵: "SC", "百货店"
             """)
             
             # Check if all required columns exist
@@ -1798,8 +2513,15 @@ else:
                 # Validate process types
                 valid_processes = ["满花局花绣花", "满花局花", "满花绣花", "局花绣花", "满花", "局花", "绣花"]
                 invalid_processes = df[~df['工序'].isin(valid_processes)]['工序'].unique()
+
+                # Validate companies
+                valid_companies = ["贝贝", "龙兵"]
+                invalid_companies = df[~df['公司'].isin(valid_companies)]['公司'].unique()
+                
                 if len(invalid_processes) > 0:
                     st.error(f"发现无效的工序类型：{', '.join(invalid_processes)}")
+                elif len(invalid_companies) > 0:
+                    st.error(f"发现无效的公司：{', '.join(invalid_companies)}")
                 else:
                     # 检查"生产顺序"列是否存在
                     has_production_order = '生产顺序' in df.columns
@@ -1813,17 +2535,22 @@ else:
                         start_time = row['缝纫开始时间'] if row['缝纫开始时间'] in ["上午", "下午"] else "上午"
                         # 获取生产顺序，如果存在
                         production_order = int(row['生产顺序']) if '生产顺序' in df.columns and pd.notna(row['生产顺序']) else 1
-                        
+
+                        try:
+                            cycle_value = int(row['确认周转周期'])
+                        except (ValueError, TypeError):
+                            cycle_value = str(row['确认周转周期'])
                         new_style = {
                             "style_number": str(row['款号']),
                             "sewing_start_date": row['缝纫开始日期'],
                             "start_time_period": start_time,
                             "process_type": row['工序'],
-                            "cycle": int(row['确认周转周期']),
+                            "cycle": cycle_value,
                             "order_quantity": int(row['订单数量']),
                             "daily_production": int(row['日产量']),
                             "production_group": str(row['生产组']),
-                            "production_order": production_order
+                            "production_order": production_order，
+                            "company": str(row['公司'])
                         }
                         new_styles.append(new_style)
                     
@@ -1847,43 +2574,79 @@ else:
         sewing_start_date = st.date_input("请选择缝纫开始日期:", min_value=datetime.today().date())
 
         # 添加上午/下午选择
-        col1, col2 = st.columns(2)
+        col1, col2, col3 = st.columns(3)
         with col1:
             start_time_period = st.selectbox("缝纫开始时间:", ["上午", "下午"])
         with col2:
+            selected_company = st.selectbox("请选择公司:", ["贝贝", "龙兵"])
+        with col3:
             process_options = ["满花局花绣花", "满花局花", "满花绣花", "局花绣花", "满花", "局花", "绣花"]
             selected_process = st.selectbox("请选择工序:", process_options)
+        
         # 添加新字段
         order_quantity = st.number_input("订单数量:", min_value=1, value=100)
         daily_production = st.number_input("日产量:", min_value=1, value=50)
         production_group = st.text_input("生产组号:", "")
         production_order = st.number_input("生产顺序:", min_value=1, value=1, help="同一生产组内款式的生产顺序")
-        cycle = st.selectbox("请选择确认周转周期:", [7, 14, 30])
+        # 根据选择的公司显示不同的周期选项
+        cycle_options = get_cycle_options(selected_company)
+        cycle = st.selectbox("请选择确认周转周期:", cycle_options)
         
         submitted = st.form_submit_button("添加款号")
         if submitted and style_numbers:
-            # 分割多行输入，去除空行和空格
-            new_style_numbers = [s.strip() for s in style_numbers.split('\n') if s.strip()]
+            # # 分割多行输入，去除空行和空格
+            # new_style_numbers = [s.strip() for s in style_numbers.split('\n') if s.strip()]
             
-            # 添加新的款号信息
-            for style_number in new_style_numbers:
-                new_style = {
-                    "style_number": style_number,
-                    "sewing_start_date": sewing_start_date,
-                    "start_time_period": start_time_period,  # 新增上午/下午字段
-                    "process_type": selected_process,
-                    "cycle": cycle,
-                    "order_quantity": order_quantity,
-                    "daily_production": daily_production,
-                    "production_group": production_group,
-                    "production_order": production_order
-                }
-                st.session_state["all_styles"].append(new_style)
-            # Auto-save after adding styles
-            save_user_data(st.session_state["current_user"], {
-                "all_styles": st.session_state["all_styles"]
-            })
-            st.success(f"已添加 {len(new_style_numbers)} 个款号")
+            # # 添加新的款号信息
+            # for style_number in new_style_numbers:
+            #     new_style = {
+            #         "style_number": style_number,
+            #         "sewing_start_date": sewing_start_date,
+            #         "start_time_period": start_time_period,  # 新增上午/下午字段
+            #         "process_type": selected_process,
+            #         "cycle": cycle,
+            #         "order_quantity": order_quantity,
+            #         "daily_production": daily_production,
+            #         "production_group": production_group,
+            #         "production_order": production_order,
+            #         "company": company
+            #     }
+            #     st.session_state["all_styles"].append(new_style)
+            # # Auto-save after adding styles
+            # save_user_data(st.session_state["current_user"], {
+            #     "all_styles": st.session_state["all_styles"]
+            # })
+            # st.success(f"已添加 {len(new_style_numbers)} 个款号")
+            try:
+                # Validate cycle value
+                cycle_value = validate_cycle(selected_company, cycle)
+                cycle_value = convert_cycle_to_int(selected_company, cycle_value)
+                
+                # 分割多行输入，去除空行和空格
+                new_style_numbers = [s.strip() for s in style_numbers.split('\n') if s.strip()]
+                
+                # 添加新的款号信息
+                for style_number in new_style_numbers:
+                    new_style = {
+                        "style_number": style_number,
+                        "sewing_start_date": sewing_start_date,
+                        "start_time_period": start_time_period,
+                        "process_type": selected_process,
+                        "company": selected_company,
+                        "cycle": cycle_value,
+                        "order_quantity": order_quantity,
+                        "daily_production": daily_production,
+                        "production_group": production_group,
+                        "production_order": production_order
+                    }
+                    st.session_state["all_styles"].append(new_style)
+                # Auto-save after adding styles
+                save_user_data(st.session_state["current_user"], {
+                    "all_styles": st.session_state["all_styles"]
+                })
+                st.success(f"已添加 {len(new_style_numbers)} 个款号")
+            except ValueError as e:
+                st.error(str(e))
 
     # 显示当前添加的所有款号
     if st.session_state["all_styles"]:
@@ -1898,7 +2661,7 @@ else:
                 st.write(f"{idx + 1}. 款号: {style['style_number']}, 工序: {style['process_type']}, " 
                     f"缝纫开始日期: {style['sewing_start_date']} {time_period}, 周期: {style['cycle']}, "
                     f"订单数量: {style.get('order_quantity', '-')}, 日产量: {style.get('daily_production', '-')}, "
-                    f"生产组号: {style.get('production_group', '-')}, 生产顺序: {production_order}")
+                    f"生产组号: {style.get('production_group', '-')}, 生产顺序: {production_order}", f"公司: {style.get('company', '-')})
             with col2:
                 if st.button("删除", key=f"delete_{idx}"):
                     st.session_state["all_styles"].pop(idx)
@@ -1997,14 +2760,25 @@ else:
                             # 计算缝纫结束时间
                             sewing_start_time = datetime.combine(style["sewing_start_date"], datetime.min.time())
                             start_time_period = style.get("start_time_period", "上午")
-                            schedule = calculate_schedule(
-                                sewing_start_time, 
-                                style["process_type"], 
-                                style["cycle"], 
-                                style["order_quantity"], 
-                                style["daily_production"],
-                                start_time_period
-                            )
+                            company = style["company"]
+                            if company = '贝贝':
+                                schedule = calculate_schedule(
+                                    sewing_start_time, 
+                                    style["process_type"], 
+                                    style["cycle"], 
+                                    style["order_quantity"], 
+                                    style["daily_production"],
+                                    start_time_period
+                                )
+                            else:
+                                schedule = calculate_schedule_longbing(
+                                        sewing_start_time, 
+                                        style["process_type"], 
+                                        style["cycle"], 
+                                        style["order_quantity"], 
+                                        style["daily_production"],
+                                        start_time_period
+                                    )
                             
                             sewing_end_time = schedule["缝纫"]["缝纫结束"]["时间点"]
                             sewing_end_remark = schedule["缝纫"]["缝纫结束"].get("备注", "")
@@ -2016,7 +2790,8 @@ else:
                                 "缝纫结束日期": f"{sewing_end_time.date()} ({sewing_end_remark})",
                                 "订单数量": style["order_quantity"],
                                 "日产量": style["daily_production"],
-                                "生产天数": round(style["order_quantity"] * 1.05 / style["daily_production"], 1)
+                                "生产天数": round(style["order_quantity"] * 1.05 / style["daily_production"], 1),
+                                "公司"： style["company"]
                             })
                         
                         # 显示表格
@@ -2030,14 +2805,26 @@ else:
                         for style in order_styles:
                             sewing_start_time = datetime.combine(style["sewing_start_date"], datetime.min.time())
                             start_time_period = style.get("start_time_period", "上午")
-                            schedule = calculate_schedule(
-                                sewing_start_time, 
-                                style["process_type"], 
-                                style["cycle"], 
-                                style["order_quantity"], 
-                                style["daily_production"],
-                                start_time_period
-                            )
+                            company = style["company"]
+                            if company = '贝贝':
+                                schedule = calculate_schedule(
+                                    sewing_start_time, 
+                                    style["process_type"], 
+                                    style["cycle"], 
+                                    style["order_quantity"], 
+                                    style["daily_production"],
+                                    start_time_period
+                                )
+                            else:
+                                schedule = calculate_schedule_longbing(
+                                        sewing_start_time, 
+                                        style["process_type"], 
+                                        style["cycle"], 
+                                        style["order_quantity"], 
+                                        style["daily_production"],
+                                        start_time_period
+                                    )
+                        
                             
                             end_time = schedule["缝纫"]["缝纫结束"]["时间点"]
                             end_remark = schedule["缝纫"]["缝纫结束"].get("备注", "")
@@ -2090,14 +2877,26 @@ else:
                     for style in styles_to_process:
                         sewing_start_time = datetime.combine(style["sewing_start_date"], datetime.min.time())
                         start_time_period = style.get("start_time_period", "上午")  # 获取上午/下午信息
-                        schedule = calculate_schedule(
-                            sewing_start_time, 
-                            style["process_type"], 
-                            style["cycle"], 
-                            style["order_quantity"], 
-                            style["daily_production"],
-                            start_time_period
-                        )
+                        company = style["company"]
+                            if company = '贝贝':
+                                schedule = calculate_schedule(
+                                    sewing_start_time, 
+                                    style["process_type"], 
+                                    style["cycle"], 
+                                    style["order_quantity"], 
+                                    style["daily_production"],
+                                    start_time_period
+                                )
+                            else:
+                                schedule = calculate_schedule_longbing(
+                                        sewing_start_time, 
+                                        style["process_type"], 
+                                        style["cycle"], 
+                                        style["order_quantity"], 
+                                        style["daily_production"],
+                                        start_time_period
+                                    )
+                            
                         # 设置当前款号和生产组用于标题显示
                         st.session_state["style_number"] = style["style_number"]
                         st.session_state["production_group"] = style.get("production_group", "")
