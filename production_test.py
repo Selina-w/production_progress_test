@@ -2549,7 +2549,7 @@ else:
                             "order_quantity": int(row['订单数量']),
                             "daily_production": int(row['日产量']),
                             "production_group": str(row['生产组']),
-                            "production_order": production_order，
+                            "production_order": production_order,
                             "company": str(row['公司'])
                         }
                         new_styles.append(new_style)
