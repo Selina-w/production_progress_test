@@ -1173,7 +1173,7 @@ def rearrange_styles_by_production_group(styles):
             for style in first_order_styles:
                 sewing_start_time = datetime.combine(style["sewing_start_date"], datetime.min.time())
                 company = style["company"]
-                if company = '贝贝':
+                if company == '贝贝':
                     schedule = calculate_schedule(
                         sewing_start_time, 
                         style["process_type"], 
@@ -1225,7 +1225,7 @@ def rearrange_styles_by_production_group(styles):
                 for style in current_order_styles:
                     sewing_start_time = datetime.combine(style["sewing_start_date"], datetime.min.time())
                     company = style["company"]
-                    if company = '贝贝':
+                    if company == '贝贝':
                         schedule = calculate_schedule(
                             sewing_start_time, 
                             style["process_type"], 
@@ -1278,7 +1278,7 @@ def generate_excel_report(styles):
             # 否则重新计算schedule
             sewing_start_time = datetime.combine(style["sewing_start_date"], datetime.min.time()) if not isinstance(style["sewing_start_date"], datetime) else style["sewing_start_date"]
             company = style["company"]
-            if company = '贝贝':
+            if company == '贝贝':
                 schedule = calculate_schedule(
                     sewing_start_time, 
                     style["process_type"], 
@@ -1844,7 +1844,7 @@ def generate_department_wise_plots(styles):
         sewing_start_time = datetime.combine(style["sewing_start_date"], datetime.min.time())
         start_time_period = style.get("start_time_period", "上午")  # 获取上午/下午信息
         company = style["company"]
-        if company = '贝贝':
+        if company == '贝贝':
             schedule = calculate_schedule(
                 sewing_start_time, 
                 style["process_type"], 
@@ -2761,7 +2761,7 @@ else:
                             sewing_start_time = datetime.combine(style["sewing_start_date"], datetime.min.time())
                             start_time_period = style.get("start_time_period", "上午")
                             company = style["company"]
-                            if company = '贝贝':
+                            if company == '贝贝':
                                 schedule = calculate_schedule(
                                     sewing_start_time, 
                                     style["process_type"], 
@@ -2806,7 +2806,7 @@ else:
                             sewing_start_time = datetime.combine(style["sewing_start_date"], datetime.min.time())
                             start_time_period = style.get("start_time_period", "上午")
                             company = style["company"]
-                            if company = '贝贝':
+                            if company == '贝贝':
                                 schedule = calculate_schedule(
                                     sewing_start_time, 
                                     style["process_type"], 
@@ -2878,7 +2878,7 @@ else:
                         sewing_start_time = datetime.combine(style["sewing_start_date"], datetime.min.time())
                         start_time_period = style.get("start_time_period", "上午")  # 获取上午/下午信息
                         company = style["company"]
-                            if company = '贝贝':
+                            if company == '贝贝':
                                 schedule = calculate_schedule(
                                     sewing_start_time, 
                                     style["process_type"], 
