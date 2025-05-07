@@ -400,7 +400,7 @@ def calculate_schedule_longbing(sewing_start_date, process_type, confirmation_pe
             schedule["局花"]["局花"] = {"时间点": X + timedelta(days=50)}
     elif confirmation_period == '百货店':   
         if "局花" in schedule:
-            schedule["局花"]["局花工艺"] = {"时间点": schedule["裁剪"]["工艺样版"]["时间点"]["时间点"]}
+            schedule["局花"]["局花工艺"] = {"时间点": schedule["裁剪"]["工艺样版"]["时间点"]}
         if process_type == "满花局花绣花":
             schedule["局花"]["局花"] = {"时间点": X + timedelta(days=46)}
         elif process_type == "满花局花":
