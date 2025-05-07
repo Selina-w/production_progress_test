@@ -1241,7 +1241,7 @@ def rearrange_styles_by_production_group(styles):
                             style["cycle"], 
                             style["order_quantity"], 
                             style["daily_production"],
-                            style["start_time_period"]
+                            style["start_time_period"])
                     
                     end_time = schedule["缝纫"]["缝纫结束"]["时间点"]
                     end_remark = schedule["缝纫"]["缝纫结束"].get("备注", "下午结束")
