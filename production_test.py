@@ -2791,7 +2791,7 @@ else:
                                 "订单数量": style["order_quantity"],
                                 "日产量": style["daily_production"],
                                 "生产天数": round(style["order_quantity"] * 1.05 / style["daily_production"], 1),
-                                "公司"： style["company"]
+                                "公司": style["company"]
                             })
                         
                         # 显示表格
