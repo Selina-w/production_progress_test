@@ -2580,8 +2580,12 @@ else:
         with col2:
             selected_company = st.selectbox("请选择公司:", ["贝贝", "龙兵"])
         with col3:
-            process_options = ["满花局花绣花", "满花局花", "满花绣花", "局花绣花", "满花", "局花", "绣花"]
-            selected_process = st.selectbox("请选择工序:", process_options)
+            # Define process options based on company
+            process_options = {
+                "贝贝": ["满花局花绣花", "满花局花", "满花绣花", "局花绣花", "满花", "局花", "绣花"],
+                "龙兵": ["满花局花绣花", "满花局花", "满花绣花", "局花绣花", "满花", "局花", "绣花", "无印绣"]
+            }
+            selected_process = st.selectbox("请选择工序:", process_options[selected_company])
         
         # 添加新字段
         order_quantity = st.number_input("订单数量:", min_value=1, value=100)
