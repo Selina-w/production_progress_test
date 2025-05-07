@@ -2878,8 +2878,17 @@ else:
                         sewing_start_time = datetime.combine(style["sewing_start_date"], datetime.min.time())
                         start_time_period = style.get("start_time_period", "上午")  # 获取上午/下午信息
                         company = style["company"]
-                            if company == '贝贝':
-                                schedule = calculate_schedule(
+                        if company == '贝贝':
+                            schedule = calculate_schedule(
+                                sewing_start_time, 
+                                style["process_type"], 
+                                style["cycle"], 
+                                style["order_quantity"], 
+                                style["daily_production"],
+                                start_time_period
+                            )
+                        else:
+                            schedule = calculate_schedule_longbing(
                                     sewing_start_time, 
                                     style["process_type"], 
                                     style["cycle"], 
@@ -2887,15 +2896,6 @@ else:
                                     style["daily_production"],
                                     start_time_period
                                 )
-                            else:
-                                schedule = calculate_schedule_longbing(
-                                        sewing_start_time, 
-                                        style["process_type"], 
-                                        style["cycle"], 
-                                        style["order_quantity"], 
-                                        style["daily_production"],
-                                        start_time_period
-                                    )
                             
                         # 设置当前款号和生产组用于标题显示
                         st.session_state["style_number"] = style["style_number"]
