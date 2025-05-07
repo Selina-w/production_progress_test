@@ -2591,13 +2591,15 @@ else:
             if 'selected_company' not in st.session_state:
                 st.session_state.selected_company = "贝贝"
             
-            # Update company selection and trigger re-run
+            # Update company selection
             selected_company = st.selectbox(
                 "请选择公司:", 
                 ["贝贝", "龙兵"],
-                key="company_selector",
-                on_change=lambda: setattr(st.session_state, 'selected_company', st.session_state.company_selector)
+                key="company_selector"
             )
+            # Update session state
+            st.session_state.selected_company = selected_company
+            
         with col3:
             # Define process options based on company
             process_options = {
