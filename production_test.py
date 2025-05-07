@@ -1294,7 +1294,7 @@ def generate_excel_report(styles):
                     style["cycle"], 
                     style["order_quantity"], 
                     style["daily_production"],
-                    style.get("start_time_period", "上午")
+                    style.get("start_time_period", "上午"))
         
         # 收集每个步骤的日期和备注
         for dept, steps in schedule.items():
