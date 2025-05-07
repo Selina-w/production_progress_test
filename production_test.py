@@ -1860,7 +1860,7 @@ def generate_department_wise_plots(styles):
                 style["cycle"], 
                 style["order_quantity"], 
                 style["daily_production"],
-                start_time_period
+                start_time_period)
         for dept, steps in schedule.items():
             for step, data in steps.items():
                 # 创建一个新字典来存储步骤数据
