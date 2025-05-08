@@ -2563,20 +2563,20 @@ else:
                         }
                         new_styles.append(new_style)
                     
-                    # if st.button("添加Excel中的款号"):
-                    #     st.session_state["all_styles"].extend(new_styles)
-                    #     # Auto-save after adding styles
-                    #     save_user_data(st.session_state["current_user"], {
-                    #         "all_styles": st.session_state["all_styles"]
-                    #     })
-                    #     st.success(f"已从Excel添加 {len(new_styles)} 个款号")
-                    #     st.rerun()
-                    st.session_state["all_styles"].extend(new_styles)
-                    save_user_data(st.session_state["current_user"], {
-                        "all_styles": st.session_state["all_styles"]
-                    })
-                    st.success(f"已从Excel添加 {len(new_styles)} 个款号")
-                    st.rerun()
+                    if st.button("添加Excel中的款号"):
+                        st.session_state["all_styles"].extend(new_styles)
+                        # Auto-save after adding styles
+                        save_user_data(st.session_state["current_user"], {
+                            "all_styles": st.session_state["all_styles"]
+                        })
+                        st.success(f"已从Excel添加 {len(new_styles)} 个款号")
+                        st.rerun()
+                    # st.session_state["all_styles"].extend(new_styles)
+                    # save_user_data(st.session_state["current_user"], {
+                    #     "all_styles": st.session_state["all_styles"]
+                    # })
+                    # st.success(f"已从Excel添加 {len(new_styles)} 个款号")
+                    # st.rerun()
         
         except Exception as e:
             st.error(f"读取Excel文件时出错：{str(e)}")
