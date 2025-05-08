@@ -116,7 +116,7 @@ def get_department_steps(process_type=None):
     # If "满花局花绣花", return all departments
     return all_departments
 
-def get_department_steps_longbing(process_type=None, confirmation_period = None):
+def get_department_steps_beibei(process_type=None, confirmation_period = None):
     """Get department steps based on process type"""
     if confirmation_period == 'SC':
         all_departments = {
@@ -188,12 +188,12 @@ def get_department_steps_longbing(process_type=None, confirmation_period = None)
     # If "满花局花绣花", return all departments
     return all_departments
 
-def calculate_schedule_longbing(sewing_start_date, process_type, confirmation_period, order_quantity, daily_production, start_time_period="上午"):
+def calculate_schedule_beibei(sewing_start_date, process_type, confirmation_period, order_quantity, daily_production, start_time_period="上午"):
     """ 计算整个生产流程的时间安排 """
     schedule = {}
     
     # 将所有工序的时间初始化为字典
-    for dept, steps in get_department_steps_longbing(process_type, confirmation_period).items():
+    for dept, steps in get_department_steps_beibei(process_type, confirmation_period).items():
         schedule[dept] = {}
     
     Y = sewing_start_date  # 订单缝纫开始日期
@@ -543,7 +543,7 @@ def calculate_schedule_longbing(sewing_start_date, process_type, confirmation_pe
     return schedule
 
 
-def calculate_schedule_beibei_new(sewing_start_date, process_type, order_quantity, daily_production, start_time_period="上午"):
+def calculate_schedule_longbing(sewing_start_date, process_type, order_quantity, daily_production, start_time_period="上午"):
     """ 计算整个生产流程的时间安排 """
     schedule = {}
     
@@ -758,7 +758,7 @@ def calculate_schedule_beibei_new(sewing_start_date, process_type, order_quantit
 def calculate_schedule(sewing_start_date, process_type, confirmation_period, order_quantity, daily_production, start_time_period="上午"):
     """ 计算整个生产流程的时间安排 """
     if confirmation_period == '1个月交期+确认5天':
-        return calculate_schedule_beibei_new(sewing_start_date, process_type, order_quantity, daily_production, start_time_period="上午")
+        return calculate_schedule_longbing(sewing_start_date, process_type, order_quantity, daily_production, start_time_period="上午")
         
     schedule = {}
     
@@ -1173,7 +1173,7 @@ def rearrange_styles_by_production_group(styles):
             for style in first_order_styles:
                 sewing_start_time = datetime.combine(style["sewing_start_date"], datetime.min.time())
                 company = style["company"]
-                if company == '贝贝':
+                if company == '龙兵':
                     schedule = calculate_schedule(
                         sewing_start_time, 
                         style["process_type"], 
@@ -1183,7 +1183,7 @@ def rearrange_styles_by_production_group(styles):
                         style["start_time_period"]
                     )
                 else:
-                    schedule = calculate_schedule_longbing(
+                    schedule = calculate_schedule_beibei(
                         sewing_start_time, 
                         style["process_type"], 
                         style["cycle"], 
@@ -1225,7 +1225,7 @@ def rearrange_styles_by_production_group(styles):
                 for style in current_order_styles:
                     sewing_start_time = datetime.combine(style["sewing_start_date"], datetime.min.time())
                     company = style["company"]
-                    if company == '贝贝':
+                    if company == '龙兵':
                         schedule = calculate_schedule(
                             sewing_start_time, 
                             style["process_type"], 
@@ -1235,7 +1235,7 @@ def rearrange_styles_by_production_group(styles):
                             style["start_time_period"]
                         )
                     else:
-                        schedule = calculate_schedule_longbing(
+                        schedule = calculate_schedule_beibei(
                             sewing_start_time, 
                             style["process_type"], 
                             style["cycle"], 
@@ -1278,7 +1278,7 @@ def generate_excel_report(styles):
             # 否则重新计算schedule
             sewing_start_time = datetime.combine(style["sewing_start_date"], datetime.min.time()) if not isinstance(style["sewing_start_date"], datetime) else style["sewing_start_date"]
             company = style["company"]
-            if company == '贝贝':
+            if company == '龙兵':
                 schedule = calculate_schedule(
                     sewing_start_time, 
                     style["process_type"], 
@@ -1288,7 +1288,7 @@ def generate_excel_report(styles):
                     style.get("start_time_period", "上午")
                 )
             else:
-                schedule = calculate_schedule_longbing(
+                schedule = calculate_schedule_beibei(
                     sewing_start_time, 
                     style["process_type"], 
                     style["cycle"], 
@@ -1853,7 +1853,7 @@ def generate_department_wise_plots(styles):
         sewing_start_time = datetime.combine(style["sewing_start_date"], datetime.min.time())
         start_time_period = style.get("start_time_period", "上午")  # 获取上午/下午信息
         company = style["company"]
-        if company == '贝贝':
+        if company == '龙兵':
             schedule = calculate_schedule(
                 sewing_start_time, 
                 style["process_type"], 
@@ -1863,7 +1863,7 @@ def generate_department_wise_plots(styles):
                 start_time_period
             )
         else:
-            schedule = calculate_schedule_longbing(
+            schedule = calculate_schedule_beibei(
                 sewing_start_time, 
                 style["process_type"], 
                 style["cycle"], 
@@ -2301,9 +2301,9 @@ def generate_department_wise_plots(styles):
 
 def get_cycle_options(company):
     """Get valid cycle options based on company"""
-    if company == "贝贝":
+    if company == "龙兵":
         return [7, 14, 30, "1个月交期+确认5天"]
-    elif company == "龙兵":
+    elif company == "":
         return ["SC", "百货店"]
     else:
         raise ValueError(f"Invalid company: {company}")
@@ -2317,11 +2317,11 @@ def validate_cycle(company, cycle):
 
 def convert_cycle_to_int(company, cycle):
     """Convert cycle to int if possible based on company"""
-    if company == "贝贝":
+    if company == "龙兵":
         if cycle == "1个月交期+确认5天":
             return cycle
         return int(cycle)
-    elif company == "龙兵":
+    elif company == "":
         return cycle
     else:
         raise ValueError(f"Invalid company: {company}")
@@ -2503,13 +2503,13 @@ else:
             * 必需列: 款号、缝纫开始日期、缝纫开始时间、工序、确认周转周期、订单数量、日产量、生产组
             * 可选列: 生产顺序 (同一生产组内款式的排产顺序，相同顺序号的款式将在同一天开始生产)
             * 缝纫开始时间列应填写"上午"或"下午"
-            * 公司列应为: 贝贝 或 龙兵
+            * 公司列应为: 龙兵 或 
             * 工序列应为以下之一: 
-                - 贝贝: 满花局花绣花、满花局花、满花绣花、局花绣花、满花、局花、绣花
-                - 龙兵: 满花局花绣花、满花局花、满花绣花、局花绣花、满花、局花、绣花、无印绣
+                - 龙兵: 满花局花绣花、满花局花、满花绣花、局花绣花、满花、局花、绣花
+                - 贝贝: 满花局花绣花、满花局花、满花绣花、局花绣花、满花、局花、绣花、无印绣
             * 确认周转周期:
-              - 贝贝: 7, 14, 30, "1个月交期+确认5天"
-              - 龙兵: "SC", "百货店"
+              - 龙兵: 7, 14, 30, "1个月交期+确认5天"
+              - 贝贝: "SC", "百货店"
             """)
             
             # Check if all required columns exist
@@ -2524,7 +2524,7 @@ else:
                 invalid_processes = df[~df['工序'].isin(valid_processes)]['工序'].unique()
 
                 # Validate companies
-                valid_companies = ["贝贝", "龙兵"]
+                valid_companies = ["龙兵", "贝贝"]
                 invalid_companies = df[~df['公司'].isin(valid_companies)]['公司'].unique()
                 
                 if len(invalid_processes) > 0:
@@ -2587,23 +2587,23 @@ else:
         with col1:
             start_time_period = st.selectbox("缝纫开始时间:", ["上午", "下午"])
         # with col2:
-        #     selected_company = st.selectbox("请选择公司:", ["贝贝", "龙兵"])
+        #     selected_company = st.selectbox("请选择公司:", ["龙兵", ""])
         # with col3:
         #     # Define process options based on company
         #     process_options = {
-        #         "贝贝": ["满花局花绣花", "满花局花", "满花绣花", "局花绣花", "满花", "局花", "绣花"],
-        #         "龙兵": ["满花局花绣花", "满花局花", "满花绣花", "局花绣花", "满花", "局花", "绣花", "无印绣"]
+        #         "龙兵": ["满花局花绣花", "满花局花", "满花绣花", "局花绣花", "满花", "局花", "绣花"],
+        #         "贝贝": ["满花局花绣花", "满花局花", "满花绣花", "局花绣花", "满花", "局花", "绣花", "无印绣"]
         #     }
         #     selected_process = st.selectbox("请选择工序:", process_options[selected_company])
         with col2:
             # Initialize session state for company if not exists
             if 'selected_company' not in st.session_state:
-                st.session_state.selected_company = "贝贝"
+                st.session_state.selected_company = "龙兵"
             
             # Update company selection
             selected_company = st.selectbox(
                 "请选择公司:", 
-                ["贝贝", "龙兵"],
+                ["龙兵", "贝贝"],
                 key="company_selector"
             )
             # Update session state
@@ -2612,8 +2612,8 @@ else:
         with col3:
             # Define process options based on company
             process_options = {
-                "贝贝": ["满花局花绣花", "满花局花", "满花绣花", "局花绣花", "满花", "局花", "绣花"],
-                "龙兵": ["满花局花绣花", "满花局花", "满花绣花", "局花绣花", "满花", "局花", "绣花", "无印绣"]
+                "龙兵": ["满花局花绣花", "满花局花", "满花绣花", "局花绣花", "满花", "局花", "绣花"],
+                "贝贝": ["满花局花绣花", "满花局花", "满花绣花", "局花绣花", "满花", "局花", "绣花", "无印绣"]
             }
             selected_process = st.selectbox(
                 "请选择工序:", 
@@ -2799,7 +2799,7 @@ else:
                             sewing_start_time = datetime.combine(style["sewing_start_date"], datetime.min.time())
                             start_time_period = style.get("start_time_period", "上午")
                             company = style["company"]
-                            if company == '贝贝':
+                            if company == '龙兵':
                                 schedule = calculate_schedule(
                                     sewing_start_time, 
                                     style["process_type"], 
@@ -2809,7 +2809,7 @@ else:
                                     start_time_period
                                 )
                             else:
-                                schedule = calculate_schedule_longbing(
+                                schedule = calculate_schedule_beibei(
                                         sewing_start_time, 
                                         style["process_type"], 
                                         style["cycle"], 
@@ -2844,7 +2844,7 @@ else:
                             sewing_start_time = datetime.combine(style["sewing_start_date"], datetime.min.time())
                             start_time_period = style.get("start_time_period", "上午")
                             company = style["company"]
-                            if company == '贝贝':
+                            if company == '龙兵':
                                 schedule = calculate_schedule(
                                     sewing_start_time, 
                                     style["process_type"], 
@@ -2854,7 +2854,7 @@ else:
                                     start_time_period
                                 )
                             else:
-                                schedule = calculate_schedule_longbing(
+                                schedule = calculate_schedule_beibei(
                                         sewing_start_time, 
                                         style["process_type"], 
                                         style["cycle"], 
@@ -2916,7 +2916,7 @@ else:
                         sewing_start_time = datetime.combine(style["sewing_start_date"], datetime.min.time())
                         start_time_period = style.get("start_time_period", "上午")  # 获取上午/下午信息
                         company = style["company"]
-                        if company == '贝贝':
+                        if company == '龙兵':
                             schedule = calculate_schedule(
                                 sewing_start_time, 
                                 style["process_type"], 
@@ -2926,7 +2926,7 @@ else:
                                 start_time_period
                             )
                         else:
-                            schedule = calculate_schedule_longbing(
+                            schedule = calculate_schedule_beibei(
                                     sewing_start_time, 
                                     style["process_type"], 
                                     style["cycle"], 
