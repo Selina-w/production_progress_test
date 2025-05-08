@@ -2520,7 +2520,7 @@ else:
                 df['缝纫开始日期'] = pd.to_datetime(df['缝纫开始日期']).dt.date
                 
                 # Validate process types
-                valid_processes = ["满花局花绣花", "满花局花", "满花绣花", "局花绣花", "满花", "局花", "绣花"]
+                valid_processes = ["满花局花绣花", "满花局花", "满花绣花", "局花绣花", "满花", "局花", "绣花", "无印绣"]
                 invalid_processes = df[~df['工序'].isin(valid_processes)]['工序'].unique()
 
                 # Validate companies
