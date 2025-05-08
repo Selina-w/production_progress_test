@@ -2303,7 +2303,7 @@ def get_cycle_options(company):
     """Get valid cycle options based on company"""
     if company == "龙兵":
         return [7, 14, 30, "1个月交期+确认5天"]
-    elif company == "":
+    elif company == "贝贝":
         return ["SC", "百货店"]
     else:
         raise ValueError(f"Invalid company: {company}")
@@ -2321,7 +2321,7 @@ def convert_cycle_to_int(company, cycle):
         if cycle == "1个月交期+确认5天":
             return cycle
         return int(cycle)
-    elif company == "":
+    elif company == "贝贝":
         return cycle
     else:
         raise ValueError(f"Invalid company: {company}")
@@ -2587,7 +2587,7 @@ else:
         with col1:
             start_time_period = st.selectbox("缝纫开始时间:", ["上午", "下午"])
         # with col2:
-        #     selected_company = st.selectbox("请选择公司:", ["龙兵", ""])
+        #     selected_company = st.selectbox("请选择公司:", ["龙兵", "贝贝"])
         # with col3:
         #     # Define process options based on company
         #     process_options = {
