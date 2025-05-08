@@ -2490,7 +2490,7 @@ else:
 
     # 添加Excel上传功能
     st.subheader("方式一：上传Excel文件")
-    uploaded_file = st.file_uploader("上传Excel文件 (必需列：款号、缝纫开始日期、缝纫开始时间、工序、确认周转周期, '订单数量', '日产量', '生产组', '生产顺序', '公司')", type=['xlsx', 'xls'])
+    uploaded_file = st.file_uploader("上传Excel文件 (必需列：款号、缝纫开始日期、缝纫开始时间、工序、确认周转周期, 订单数量, 日产量, 生产组, 生产顺序, 公司)", type=['xlsx', 'xls'])
 
 
     if uploaded_file is not None:
